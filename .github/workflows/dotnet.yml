@@ -1,0 +1,44 @@
+name: Release to Exilence Backend CI/CD
+
+on: 
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: ExilenceNextBackend
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Checkout branch
+      uses: actions/checkout@v2
+    - name: Setup .NET Core 3.1.x
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.x
+    - name: Publish release artifacts
+      run: dotnet publish -c release -r ubuntu.18.04-x64 -o deploy
+    - name: Stop backend service
+      uses: garygrossgarten/github-action-ssh@v0.3.0
+      with:
+        command: sudo systemctl stop exilence-next.service
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USER }}
+        password: ${{ secrets.SECRET }}
+    - name: Copy release artefacts
+      uses: garygrossgarten/github-action-scp@v0.5.3
+      with:
+        local:  /home/runner/work/exilence-next/exilence-next/ExilenceNextBackend/deploy
+        remote: ${{ secrets.TARGET }}
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USER }}
+        password: ${{ secrets.SECRET }}
+    - name: Start backend service
+      uses: garygrossgarten/github-action-ssh@v0.3.0
+      with:
+        command: sudo systemctl start exilence-next.service
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USER }}
+        password: ${{ secrets.SECRET }}
+    

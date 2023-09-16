@@ -1,0 +1,24 @@
+{
+  "header": {
+    "icon": "Icon",
+    "name": "Name",
+    "ilvl": "Item level",
+    "links": "Links",
+    "level": "Level",
+    "quality": "Quality",
+    "corrupted": "Corrupted",
+    "stacksize": "Quantity",
+    "calculated": "Price (c)",
+    "total": "Total value (c)",
+    "tab_names": "Tabs"
+  },
+  "label": {
+    "item_table_placeholder": "No items found for the selected profile, take a snapshot to begin (top right)",
+    "stash_tab_dropdown_placeholder": "No stash tabs found",
+    "search_text": "Search items ..."
+  },
+  "value": {
+    "true": "Yes",
+    "false": "No"
+  }
+}
