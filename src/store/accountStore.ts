@@ -53,7 +53,7 @@ export class AccountStore {
   @computed
   get authUrl(): string {
     const options = {
-      clientId: 'exilence',
+      clientId: 'exilencece',
       scopes: 'account:stashes account:profile account:characters', // Scopes limit access for OAuth tokens.
       redirectUrl: AppConfig.redirectUrl,
       state: this.authState,
