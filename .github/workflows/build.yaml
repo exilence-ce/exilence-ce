@@ -14,12 +14,12 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: exilence-ce
-    - run: ls -la
-    - run: tree
-    # - name: Release
-    #   uses: softprops/action-gh-release@v1
-    #   with:
-    #     files: Release.txt
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          Exilence*.exe
+          Exilence*.AppImage
   build-win:
     runs-on: windows-latest
     steps:
