@@ -1,8 +1,9 @@
 name: Building Exilence-CE for all Platforms
-on:
-  push:
-    tags:
-      - 'v*'
+on: [push]
+# on:
+#   push:
+#     tags:
+#       - 'v*'
 jobs:
   upload-release:
     runs-on: ubuntu-latest
