@@ -45,7 +45,7 @@ declare module '@mui/styles/defaultTheme' {
   interface DefaultTheme extends Theme {}
 }
 
-export const appName = 'Exilence Next';
+export const appName = 'Exilence CE';
 export let visitor: Visitor | undefined = undefined;
 initSentry();
 configureI18n();

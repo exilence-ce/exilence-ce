@@ -10,7 +10,7 @@ const WhatsNewDialog = ({ open, onClose }: any) => {
   useEffect(() => {
     if (!isFetching) {
       setIsFetching(true);
-      fetch('https://raw.githubusercontent.com/viktorgullmark/exilence-next/master/CHANGELOG.md')
+      fetch('https://raw.githubusercontent.com/exilence-ce/exilence-ce/master/CHANGELOG.md')
         .then((response) => response.text())
         .then((result) => {
           setChangelog(result);

@@ -27,7 +27,7 @@ export const externalService = {
 /* #region github.com */
 function getLatestRelease() {
   return axios.get<IGithubRelease>(
-    'https://api.github.com/repos/viktorgullmark/exilence-next/releases/latest'
+    'https://api.github.com/repos/exilence-ce/exilence-ce/releases/latest'
   );
 }
 
