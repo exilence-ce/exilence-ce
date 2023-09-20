@@ -1,7 +1,7 @@
-Exilence Next
-[![Become a Patreon](https://img.shields.io/badge/patreon-%F0%9F%8E%AF-orange.svg)](https://www.patreon.com/exilence)
+Exilence CE
+[![Become a Patreon](https://img.shields.io/badge/patreon-%F0%9F%8E%AF-orange.svg)](https://www.patreon.com/)
 ===
-Exilence Next is a desktop application that helps you calculate how valuable your character, inventory and stash tabs are. The data is broken down and summarized over time, to see how much you earn on an hourly basis. To add to this, you can also group up with friends directly within the app to see your combined net worth.
+Exilence CE (previously Exilence Next) is a desktop application that helps you calculate how valuable your character, inventory and stash tabs are. The data is broken down and summarized over time, to see how much you earn on an hourly basis. To add to this, you can also group up with friends directly within the app to see your combined net worth.
 
 The app is a successor to our old application named Exilence, previously known as ExileParty.
 
@@ -10,7 +10,7 @@ The app is a successor to our old application named Exilence, previously known a
 ## Contents
 
 - [Download](#download)
-- [Changelog](https://github.com/viktorgullmark/exilence-next/blob/master/CHANGELOG.md)
+- [Changelog](https://github.com/exilence-ce/exilence-ce/blob/master/CHANGELOG.md)
 - [Platform](#platform)
 - [Contributing with development](#contributing-with-development)
 - [Contact us](#contact-us)
@@ -20,7 +20,7 @@ The app is a successor to our old application named Exilence, previously known a
 
 ## Download
 
-Download the latest release at https://github.com/viktorgullmark/exilence-next/releases/latest
+Download the latest release at https://github.com/exilence-ce/exilence-ce/releases/latest
 
 ## Platform
 
@@ -35,7 +35,7 @@ Currently runs with:
 
 ## Contributing with development
 
-Before submitting a PR, please see our [contributing guidelines](https://github.com/viktorgullmark/exilence-next/blob/master/CONTRIBUTING.md).
+Before submitting a PR, please see our [contributing guidelines](https://github.com/exilence-ce/exilence-ce/blob/master/CONTRIBUTING.md).
 
 ---
 **Prerequisite for building LINUX**
@@ -46,7 +46,7 @@ You will need to manually set protocol handling. Follow steps below:
 
 ```bash
 [Desktop Entry]
-Name=Exilence Next
+Name=Exilence CE
 Exec=<ABSOLUTE PATH TO ExilenceNext>/ExilenceNextApp/dist/<Exilence-Next-X.Y.Z.AppImage> %u
 Icon=<ABSOLUTE PATH TO ExilenceNext>/ExilenceNextApp/public/icon.ico
 Terminal=false
@@ -82,7 +82,7 @@ npm run release (optional, to build the installer for production and release)
 
 Communicate with us at our Discord https://discord.gg/yxuBrPY
 
-Report bugs at https://github.com/viktorgullmark/exilence-next/issues
+Report bugs at https://github.com/exilence-ce/exilence-ce/issues
 
 ## Supporting us
 
