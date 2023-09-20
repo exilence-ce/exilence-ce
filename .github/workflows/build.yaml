@@ -1,0 +1,63 @@
+name: Building Exilence-CE for all Platforms
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  upload-release:
+    runs-on: ubuntu-latest
+    needs: [build-win, build-mac, build-linux]
+    steps:
+    - uses: actions/checkout@v1
+    - name: download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: exilence-ce
+    - run: ls exilence-ce/
+    # - name: Release
+    #   uses: softprops/action-gh-release@v1
+    #   with:
+    #     files: Release.txt
+  build-win:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 14.16.1
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run smoke-build-win
+    - uses: actions/upload-artifact@v3
+      with:
+        name: exilence-ce
+        path: dist/Exilence*.exe
+  build-mac:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 14.16.1
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run smoke-build-mac
+    - run: ls dist/
+    - uses: actions/upload-artifact@v3
+      with:
+        name: exilence-ce
+        path: dist/Exilence*.dmg
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 14.16.1
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run smoke-build-linux
+    - uses: actions/upload-artifact@v3
+      with:
+        name: exilence-ce
+        path: dist/Exilence*.AppImage
