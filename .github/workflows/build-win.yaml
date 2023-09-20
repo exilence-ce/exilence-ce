@@ -1,7 +1,5 @@
 name: Building Exilence-CE for Linux
-on: 
-  label:
-    types: [created]
+on: [push]
 jobs:
   build:
     steps:
