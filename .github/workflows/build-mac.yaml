@@ -2,7 +2,7 @@ name: Building Exilence-CE for Windows
 on: [push]
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
@@ -11,7 +11,8 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm run smoke-build-win
+    - run: ls dist/
     - uses: actions/upload-artifact@v3
       with:
         name: exilence-ce-win
-        path: dist/Exilence*.exe
+        path: dist/Exilence*.dmg

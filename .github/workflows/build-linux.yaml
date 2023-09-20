@@ -1,8 +1,8 @@
-name: Building Exilence-CE for Windows
+name: Building Exilence-CE for Linux
 on: [push]
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
@@ -10,8 +10,8 @@ jobs:
         node-version: 14.16.1
         cache: 'npm'
     - run: npm ci
-    - run: npm run smoke-build-win
+    - run: npm run smoke-build-linux
     - uses: actions/upload-artifact@v3
       with:
         name: exilence-ce-win
-        path: dist/Exilence*.exe
+        path: dist/Exilence*.AppImage
