@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.2.3] - 2023-09-26
+#### Changed
+- Changed more branding & redone some styling
+- Changed donation links to Ko-fi
+
+## [1.2.2] - 2023-09-20
+#### Changed
+- Changed branding to Exilence CE
+
 ## [1.2.1] - 2022-09-17
 #### Fixed
 - Removed `Prophecy` and `Watchstone` categories
@@ -267,7 +276,7 @@ All notable changes to this project will be documented in this file.
 - Fixed a console warning related to mobx arrays
 - Fixed a console warning related to missing style element
 ##### Changed
-- Changed size and color of Patreon wordmark to blend in more with theme
+- Changed size and color of Ko-fi wordmark to blend in more with theme
 ##### Updated
 - Updated Sentry SDK
 
@@ -280,7 +289,7 @@ All notable changes to this project will be documented in this file.
 - Fixed a bug where the tabs column would take up multiple rows
 - Fixed a bug where the income was not reset when snapshots were cleared
 ##### Changed
-- Changed location of Patreon button and updated it with their new wordmark
+- Changed location of Ko-fi button and updated it with their new wordmark
 ##### Updated
 - Updated Electron (10.1.4 -> 12.0.2) with dependencies
 
@@ -514,7 +523,7 @@ All notable changes to this project will be documented in this file.
 - Added the ability to show/hide the chart
 - Added the ability to show/hide the item table
 ##### Changed
-- Changed position of the Patreon logo, to allow for more space
+- Changed position of the Ko-fi logo, to allow for more space
 - No longer persists snapshots on server (temporarily) to decrease load
 ##### Fixed
 - Fixed a bug where auto snapshotting would stop working
@@ -613,7 +622,7 @@ All notable changes to this project will be documented in this file.
 - Adding spacing to the "Total" column in the item table
 ##### Changed
 - Changed default state for navigation menu
-- Changed position for Discord and Patreon logos, to be more visible
+- Changed position for Discord and Ko-fi logos, to be more visible
 ##### Removed
 - Removed the smaller chart widget
 ##### Fixed
@@ -657,7 +666,7 @@ All notable changes to this project will be documented in this file.
 - Added a basic chart that displays snapshot history
 - Added migrations to client
 - Added description to notifications
-- Added link to Patreon page
+- Added link to Ko-fi page
 ##### Changed
 - Reduced spacing in item table for a more minimalistic look
 - Replaced the warning text in the item table with an icon

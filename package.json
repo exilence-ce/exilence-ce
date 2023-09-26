@@ -1,5 +1,5 @@
 {
-  "name": "exilence-next-app",
+  "name": "exilence-ce-app",
   "version": "1.2.2",
   "private": true,
   "dependencies": {
@@ -114,8 +114,8 @@
   "build": {
     "extends": null,
     "generateUpdatesFilesForAllChannels": true,
-    "productName": "Exilence Next",
-    "appId": "com.exilence.exilence-next-app",
+    "productName": "Exilence CE",
+    "appId": "com.exilence.exilence-ce-app",
     "files": [
       "build/**/*",
       "public/icon.*",
@@ -130,8 +130,8 @@
     },
     "publish": {
       "provider": "github",
-      "repo": "exilence-next",
-      "owner": "viktorgullmark"
+      "repo": "exilence-ce",
+      "owner": "exilence-ce"
     },
     "win": {
       "icon": "build/icon.ico"
@@ -145,7 +145,7 @@
       "category": "public.app-category.utilities"
     },
     "linux": {
-      "artifactName": "Exilence-Next-${version}.${ext}",
+      "artifactName": "Exilence-CE-${version}.${ext}",
       "icon": "build/icon512x512.png",
       "target": "AppImage",
       "category": "Utility"

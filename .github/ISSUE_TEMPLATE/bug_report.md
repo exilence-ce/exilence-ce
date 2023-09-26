@@ -24,7 +24,7 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Version**
-Please provide the version of Exilence Next that you're running.
+Please provide the version of Exilence CE that you're running.
 
 **Additional context**
 Add any other context about the problem here.

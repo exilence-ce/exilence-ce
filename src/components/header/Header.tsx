@@ -10,7 +10,7 @@ import MinimizeIcon from '@mui/icons-material/Minimize';
 import HelpIcon from '@mui/icons-material/HelpOutline';
 import clsx from 'clsx';
 import { observer } from 'mobx-react-lite';
-import PatreonLogo from '../../assets/img/patreon-wordmark-black.png';
+import kofiLogo from '../../assets/img/kofi_button_stroke.webp';
 import { close, maximize, minimize, openLink, unmaximize } from '../../utils/window.utils';
 import SupportPanel from '../support-panel/SupportPanel';
 import useStyles from './Header.styles';
@@ -83,14 +83,14 @@ const Header = ({
           <Grid item>
             <Grid container alignItems="center">
               <Grid item className={clsx(classes.noDrag)}>
-                <a href="https://patreon.com/exilence" onClick={(e) => openLink(e)}>
+                <a href="https://ko-fi.com/ExilenceCE" onClick={(e) => openLink(e)}>
                   <Box
                     display="flex"
                     alignItems="center"
                     height={1}
-                    className={classes.patreonWrapper}
+                    className={classes.kofiWrapper}
                   >
-                    <img className={classes.patreonLogo} src={PatreonLogo} alt="patreon" />
+                    <img className={classes.kofiLogo} src={kofiLogo} alt="Ko-fi" />
                   </Box>
                 </a>
               </Grid>

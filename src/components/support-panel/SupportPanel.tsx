@@ -103,7 +103,7 @@ const SupportPanel = ({ isOpen = false, setIsOpen, anchorEl = null }: SupportPan
                 </a>
                 <div className={classes.separator} />
                 <a
-                  href="https://www.patreon.com/"
+                  href="https://ko-fi.com/ExilenceCE"
                   onClick={(e) => handleLinkClick(e)}
                   className={classes.optionLink}
                 >

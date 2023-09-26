@@ -25,7 +25,7 @@ const createTray = ({ mainWindow, updateAvailable, isQuittingCallback }: CreateT
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Show Exilence Next',
+      label: 'Show Exilence CE',
       click: () => mainWindow.show(),
     },
     {
@@ -37,10 +37,10 @@ const createTray = ({ mainWindow, updateAvailable, isQuittingCallback }: CreateT
     },
     { type: 'separator' },
     {
-      label: 'Patreon',
+      label: 'Donate',
       type: 'normal',
       click: async () => {
-        await shell.openExternal('https://www.patreon.com/exilence');
+        await shell.openExternal('https://ko-fi.com/ExilenceCE');
       },
     },
     {
@@ -62,7 +62,7 @@ const createTray = ({ mainWindow, updateAvailable, isQuittingCallback }: CreateT
     },
   ]);
 
-  tray.setToolTip('Exilence Next');
+  tray.setToolTip('Exilence CE');
   tray.on('click', () => mainWindow.show());
   tray.setIgnoreDoubleClickEvents(true);
   tray.setContextMenu(contextMenu);

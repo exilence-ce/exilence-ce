@@ -1,5 +1,5 @@
 Exilence CE
-[![Become a Patreon](https://img.shields.io/badge/patreon-%F0%9F%8E%AF-orange.svg)](https://www.patreon.com/)
+[![Become a Ko-fi](https://shields.io/badge/ko--fi-Buy_me_a_coffee-ff5f5f?logo=ko-fi&style=for-the-badgeKo-fi)](https://ko-fi.com/ExilenceCE)
 ===
 Exilence CE (previously Exilence Next) is a desktop application that helps you calculate how valuable your character, inventory and stash tabs are. The data is broken down and summarized over time, to see how much you earn on an hourly basis. To add to this, you can also group up with friends directly within the app to see your combined net worth.
 
@@ -42,13 +42,13 @@ Before submitting a PR, please see our [contributing guidelines](https://github.
 
 You will need to manually set protocol handling. Follow steps below:
 
-1. Create `~/.local/share/applications/ExilenceNext.desktop` with:
+1. Create `~/.local/share/applications/ExilenceCE.desktop` with:
 
 ```bash
 [Desktop Entry]
 Name=Exilence CE
-Exec=<ABSOLUTE PATH TO ExilenceNext>/ExilenceNextApp/dist/<Exilence-Next-X.Y.Z.AppImage> %u
-Icon=<ABSOLUTE PATH TO ExilenceNext>/ExilenceNextApp/public/icon.ico
+Exec=<ABSOLUTE PATH TO ExilenceCE>/ExilenceCEApp/dist/<Exilence-CE-X.Y.Z.AppImage> %u
+Icon=<ABSOLUTE PATH TO ExilenceCE>/ExilenceCEApp/public/icon.ico
 Terminal=false
 Type=Application
 MimeType=x-scheme-handler/exilence;
@@ -86,7 +86,7 @@ Report bugs at https://github.com/exilence-ce/exilence-ce/issues
 
 ## Supporting us
 
-If you feel like chiming in with something, here's our Patreon: https://www.patreon.com/exilence
+If you feel like chiming in with something, here's our Ko-fi: https://ko-fi.com/ExilenceCE
 
 ## Acknowledgements
 

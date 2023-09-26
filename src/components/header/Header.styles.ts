@@ -4,8 +4,7 @@ import makeStyles from '@mui/styles/makeStyles';
 import { primaryLighter } from '../../assets/themes/exilence-theme';
 import { resizeHandleContainerHeight, toolbarHeight } from './Header';
 
-export const patreonLogoHeight = 15;
-export const patreonLogoWidth = 80;
+export const kofiLogoHeight = 21;
 
 const useStyles = makeStyles((theme) =>
   createStyles({
@@ -30,15 +29,14 @@ const useStyles = makeStyles((theme) =>
       flexGrow: 1,
       color: '#20cc76',
     },
-    patreonWrapper: {
+    kofiWrapper: {
       background: '#fff',
       marginRight: theme.spacing(1),
       marginLeft: theme.spacing(1),
       padding: '1px 3px',
     },
-    patreonLogo: {
-      height: patreonLogoHeight,
-      width: patreonLogoWidth,
+    kofiLogo: {
+      height: kofiLogoHeight,
     },
     toolbar: {
       minHeight: toolbarHeight,

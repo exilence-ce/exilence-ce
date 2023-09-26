@@ -1,4 +1,4 @@
-# Contributing to Exilence Next
+# Contributing to Exilence Community Edition
 
 We appreciate any help in the project we can get. Before doing so, however, we have some guidelines we'd like for you to follow:
 
@@ -10,10 +10,10 @@ We appreciate any help in the project we can get. Before doing so, however, we h
 
 Before you submit your Pull Request (PR) consider the following guidelines:
 
-1. Search [GitHub](https://github.com/viktorgullmark/exilence-next/pulls) for an open or closed PR
+1. Search [GitHub](https://github.com/exilence-ce/exilence-ce/pulls) for an open or closed PR
   that relates to your submission before creating a new one.
 1. Be sure that an issue describes the problem you're fixing.
-1. Fork the viktorgullmark/exilence-next repo.
+1. Fork the exilence-ce/exilence-ce repo.
 1. Make your changes in a new git branch:
 
      ```shell
@@ -44,7 +44,7 @@ Before you submit your Pull Request (PR) consider the following guidelines:
 3. Type everything (no exceptions). We will not accept pull requests with an object declared as `any`.
 
 4. Translate everything. We use react-i18next for translating, keys should be added in suiting namespace in 
-[/public/i18n](https://github.com/viktorgullmark/exilence-next/tree/master/ExilenceNextApp/public/i18n/en). If a suiting namespace does not exist, feel free to create one (needs to be included in the [config](https://github.com/viktorgullmark/exilence-next/blob/master/ExilenceNextApp/src/i18n/index.ts)).
+[/public/i18n](https://github.com/exilence-ce/exilence-ce/tree/master/public/i18n/en). If a suiting namespace does not exist, feel free to create one (needs to be included in the [config](https://github.com/exilence-ce/exilence-ce/blob/master/src/config/i18n.ts)).
 
 ## Required extensions
 
