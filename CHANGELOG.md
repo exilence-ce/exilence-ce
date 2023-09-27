@@ -1,7 +1,9 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [1.2.3] - 2023-09-26
+## [1.2.3] - 2023-09-27
+#### Added
+- Added support for TOTA Tattoos
 #### Changed
 - Changed more branding & redone some styling
 - Changed donation links to Ko-fi
