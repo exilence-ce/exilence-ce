@@ -39,6 +39,7 @@ function getItemCategories() {
     'DivinationCard',
     //'Prophecy',
     'SkillGem',
+    'Tattoo',
     'UniqueMap',
     'Map',
     'UniqueJewel',
