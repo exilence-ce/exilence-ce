@@ -80,7 +80,7 @@ npm run release (optional, to build the installer for production and release)
 
 ## Contact us
 
-Communicate with us at our Discord https://discord.gg/yxuBrPY
+Communicate with us at our Discord https://discord.gg/2T3WXBgjaM
 
 Report bugs at https://github.com/exilence-ce/exilence-ce/issues
 

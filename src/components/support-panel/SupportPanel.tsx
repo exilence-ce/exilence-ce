@@ -66,7 +66,7 @@ const SupportPanel = ({ isOpen = false, setIsOpen, anchorEl = null }: SupportPan
             <Paper className={classes.paper} elevation={8}>
               <ul className={classes.list}>
                 <a
-                  href="https://discord.gg/yxuBrPY"
+                  href="https://discord.gg/2T3WXBgjaM"
                   onClick={(e) => handleLinkClick(e)}
                   className={classes.optionLink}
                 >

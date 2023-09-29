@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.2.4] - 2023-09-29
+#### Changed
+- Changed the discord server link to our community discord
+
 ## [1.2.3] - 2023-09-27
 #### Added
 - Added support for TOTA Tattoos
