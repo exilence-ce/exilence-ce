@@ -8,9 +8,10 @@ const path = require('path');
 const url = require('url');
 
 function getTranslationPath(lng: string, ns: string) {
+  const isWin = process.platform === "win32";
   const langPath = `/i18n/${lng}/${ns}.json`;
   const fullPath = url.format({
-    pathname: path.join(electronService.appPath, `../public/${langPath}`),
+    pathname: path.join(electronService.appPath, isWin ? `../public${langPath}` : `../${langPath}`),
     protocol: 'file:',
     slashes: true,
   });
