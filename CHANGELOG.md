@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 ## [1.2.4] - 2023-09-29
 #### Added
 - Added support for TOTA Omens
+#### Fixed
+- Fixed internationization not working on linux & mac
 #### Changed
 - Changed the discord server link to our community discord
 
