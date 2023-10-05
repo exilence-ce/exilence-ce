@@ -102,7 +102,16 @@ function createWindow() {
       );
 
   browserWindows[MAIN_BROWSER_WINDOW].on('close', (e: Event) => {
-    if (getLocalSettings().appExitAction === 'exit') return;
+    if (getLocalSettings().appExitAction === 'exit') {
+      // http://www.matthiassommer.it/programming/frontend/two-ways-to-react-on-the-electron-close-event/
+      if (browserWindows[MAIN_BROWSER_WINDOW]) {
+        e.preventDefault();
+        // Signal the session to switch to offline. After this, the session will emit the "closed" event to ipcMain
+        browserWindows[MAIN_BROWSER_WINDOW].webContents.send('offline-net-worth-session');
+      }
+
+      return;
+    }
     if (!isQuitting) {
       e.preventDefault();
       browserWindows[MAIN_BROWSER_WINDOW].hide();
@@ -123,6 +132,16 @@ function createWindow() {
       appPath,
       appLocale,
     };
+  });
+
+  /**
+   * NetWorth session handlers
+   */
+  ipcMain.on('closed', () => {
+    browserWindows[MAIN_BROWSER_WINDOW] = null;
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
   });
 
   /**

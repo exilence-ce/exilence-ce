@@ -34,6 +34,21 @@ export class AccountStore {
     electronService.ipcRenderer.on('auth-callback', (_event, { code, error }) => {
       this.handleAuthCallback(code, error);
     });
+    electronService.ipcRenderer.on('offline-net-worth-session', () => {
+      let stateChanged = false;
+      this.accounts.forEach((account) => {
+        account.profiles.forEach((profile) => {
+          if (profile.session.offlineSession()) {
+            stateChanged = true;
+          }
+        });
+      });
+      if (!stateChanged) return electronService.ipcRenderer.send('closed');
+      setTimeout(() => {
+        electronService.ipcRenderer.send('closed');
+        // TODO: If closed to early, the states are not saved to indexDB; Is there any hook/callback?
+      }, 1000);
+    });
 
     autorun(() => {
       if (this.getSelectedAccount?.activeLeague) {

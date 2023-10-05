@@ -26,7 +26,12 @@ import { IStashTabSnapshot } from '../../interfaces/stash-tab-snapshot.interface
 import { IStashTab } from '../../interfaces/stash.interface';
 import { pricingService } from '../../services/pricing.service';
 import { mapItemsToPricedItems, mergeItemStacks } from '../../utils/item.utils';
-import { excludeInvalidItems, excludeLegacyMaps, findPrice } from '../../utils/price.utils';
+import {
+  excludeInvalidItems,
+  excludeLegacyMaps,
+  findPrice,
+  findPriceForItem,
+} from '../../utils/price.utils';
 import { mapProfileToApiProfile } from '../../utils/profile.utils';
 import {
   calculateNetWorth,
@@ -43,8 +48,11 @@ import {
 } from '../../utils/snapshot.utils';
 import { rootStore, visitor } from './../../index';
 import { externalService } from './../../services/external.service';
+import { Session } from './session';
 import { Snapshot } from './snapshot';
 import { StashTabSnapshot } from './stashtab-snapshot';
+
+// Fixed & Improved: Overlay sometimes do not update: ResetImcome especially
 
 export class Profile {
   @persist uuid: string = uuidv4();
@@ -58,15 +66,31 @@ export class Profile {
 
   @persist('list', Snapshot) @observable snapshots: Snapshot[] = [];
 
+  @persist('object', Session) @observable session: Session = new Session(this.uuid);
+
   @persist @observable active: boolean = false;
   @persist @observable includeEquipment: boolean = false;
   @persist @observable includeInventory: boolean = false;
-  @observable income: number = 0;
-  @observable incomeResetAt: moment.Moment = moment().utc();
+  @persist @observable incomeResetAt: number = moment().utc().valueOf();
 
-  constructor(obj?: IProfile) {
+  constructor(obj?: IProfile, disposeSession = false, currentProfile?: Profile) {
     makeObservable(this);
     Object.assign(this, obj);
+    // Fallback for older profiles - needed if hydrated? See line 69
+    if (!this.session) this.newSession();
+    else this.session.setProfileId(this.uuid);
+    // Prevent memory leaks for temp profils or sessions
+    if (disposeSession) this.session.dispose();
+    if (currentProfile) {
+      this.snapshots = currentProfile.snapshots;
+      this.session = currentProfile.session;
+      this.session.setProfileId(this.uuid);
+    }
+  }
+
+  @action
+  newSession() {
+    this.session = new Session(this.uuid);
   }
 
   @computed
@@ -107,15 +131,24 @@ export class Profile {
     if (this.snapshots.length === 0 || (diffSelected && this.snapshots.length < 2)) {
       return [];
     }
+    const filterText = rootStore.uiStateStore.bulkSellView
+      ? rootStore.uiStateStore.bulkSellItemTableFilterText.toLowerCase()
+      : rootStore.uiStateStore.itemTableFilterText.toLowerCase();
     if (diffSelected) {
       return filterItems(
         diffSnapshots(
           mapSnapshotToApiSnapshot(this.snapshots[1]),
-          mapSnapshotToApiSnapshot(this.snapshots[0])
-        )
+          mapSnapshotToApiSnapshot(this.snapshots[0]),
+          this.diffSnapshotPriceResolver
+        ),
+        filterText
       );
     }
-    return filterSnapshotItems([mapSnapshotToApiSnapshot(this.snapshots[0])]);
+    return filterSnapshotItems(
+      [mapSnapshotToApiSnapshot(this.snapshots[0])],
+      filterText,
+      rootStore.uiStateStore.filteredStashTabs
+    );
   }
 
   @computed
@@ -271,26 +304,23 @@ export class Profile {
     return getItemCount([mapSnapshotToApiSnapshot(this.snapshots[0])]);
   }
 
-  @action
-  calculateIncome() {
+  @computed
+  get income() {
+    let incomePerHour = 0;
+
     const oneHourAgo = moment().utc().subtract(1, 'hours');
-    const timestampToUse = this.incomeResetAt.isAfter(oneHourAgo) ? this.incomeResetAt : oneHourAgo;
+    const incomeResetAt = moment.utc(this.incomeResetAt);
+    const timestampToUse = incomeResetAt.isAfter(oneHourAgo) ? incomeResetAt : oneHourAgo;
     const snapshots = this.snapshots.filter((s) => moment(s.created).utc().isAfter(timestampToUse));
     const hoursToCalcOver = 1;
 
     if (snapshots.length > 1) {
       const lastSnapshot = mapSnapshotToApiSnapshot(snapshots[0]);
       const firstSnapshot = mapSnapshotToApiSnapshot(snapshots[snapshots.length - 1]);
-      const incomePerHour =
+      incomePerHour =
         (calculateNetWorth([lastSnapshot]) - calculateNetWorth([firstSnapshot])) / hoursToCalcOver;
-      this.income = incomePerHour;
-
-      return;
     }
-
-    this.income = 0;
-
-    this.updateNetWorthOverlay();
+    return incomePerHour;
   }
 
   @computed
@@ -332,7 +362,7 @@ export class Profile {
     visitor!.event('Profile', 'Edit profile').send();
 
     const apiProfile = mapProfileToApiProfile(
-      new Profile(profile),
+      new Profile(profile, true),
       rootStore.settingStore.activeCurrency
     );
 
@@ -389,8 +419,8 @@ export class Profile {
   }
 
   @action clearIncome() {
-    this.income = 0;
-    this.incomeResetAt = moment().utc();
+    this.incomeResetAt = moment.utc().valueOf();
+    this.updateNetWorthOverlay();
   }
 
   @action snapshotSuccess() {
@@ -407,11 +437,23 @@ export class Profile {
 
   @action
   updateNetWorthOverlay() {
+    const sessionmode = rootStore.uiStateStore.netWorthSessionOpen;
+
     const activeCurrency = rootStore.settingStore.activeCurrency;
 
-    let income = rootStore.signalrStore.activeGroup
-      ? rootStore.signalrStore.activeGroup.income
-      : rootStore.accountStore.getSelectedAccount!.activeProfile!.income;
+    let income: number;
+    let netWorth: number;
+    if (sessionmode) {
+      income = rootStore.accountStore.getSelectedAccount!.activeProfile!.session.income;
+      netWorth = rootStore.accountStore.getSelectedAccount.activeProfile!.session.netWorthValue;
+    } else {
+      income = rootStore.signalrStore.activeGroup
+        ? rootStore.signalrStore.activeGroup.income
+        : rootStore.accountStore.getSelectedAccount!.activeProfile!.income;
+      netWorth = rootStore.signalrStore.activeGroup
+        ? rootStore.signalrStore.activeGroup.netWorthValue
+        : rootStore.accountStore.getSelectedAccount.activeProfile!.netWorthValue;
+    }
 
     if (rootStore.settingStore.currency === 'exalt' && rootStore.priceStore.exaltedPrice) {
       income = income / rootStore.priceStore.exaltedPrice;
@@ -431,9 +473,7 @@ export class Profile {
     rootStore.overlayStore.updateOverlay({
       event: 'netWorth',
       data: {
-        netWorth: rootStore.signalrStore.activeGroup
-          ? rootStore.signalrStore.activeGroup.netWorthValue
-          : rootStore.accountStore.getSelectedAccount.activeProfile!.netWorthValue,
+        netWorth: netWorth,
         income: formattedIncome,
         short: rootStore.settingStore.activeCurrency.short,
       },
@@ -747,7 +787,8 @@ export class Profile {
           this.snapshots.unshift(snapshotToAdd);
           this.snapshots = this.snapshots.slice(0, 1000);
         });
-        this.calculateIncome();
+        this.session.saveSnapshot(snapshotToAdd);
+        this.updateNetWorthOverlay();
       };
       fromStream(this.sendSnapshot(apiSnapshot, this.snapshotSuccess, this.snapshotFail, callback));
     }
@@ -809,5 +850,43 @@ export class Profile {
     rootStore.uiStateStore.setConfirmClearSnapshotsDialogOpen(false);
     rootStore.uiStateStore.setClearingSnapshots(false);
     rootStore.notificationStore.createNotification('remove_all_snapshots', 'error', false, e);
+  }
+
+  diffSnapshotPriceResolver(removedItems: IPricedItem[]) {
+    if (removedItems.length === 0) return;
+    let activePriceLeague = rootStore.accountStore.getSelectedAccount.activePriceLeague;
+
+    if (!activePriceLeague) {
+      this.setActivePriceLeague('Standard');
+      activePriceLeague = rootStore.accountStore.getSelectedAccount.activePriceLeague;
+    }
+
+    const activePriceDetails = rootStore.priceStore.leaguePriceDetails.find(
+      (l) => l.leagueId === activePriceLeague!.id
+    );
+
+    if (!activePriceDetails) {
+      return;
+    }
+
+    removedItems.forEach((item) => {
+      const customPrice = rootStore.customPriceStore.findCustomPriceForItem(
+        item,
+        activePriceLeague?.id
+      );
+      let calculatedPrice: number | undefined;
+      if (customPrice) {
+        calculatedPrice = customPrice?.customPrice || customPrice?.calculated;
+      }
+      if (!calculatedPrice) {
+        const prices = activePriceDetails.leaguePriceSources[0].prices;
+        const lastPricedItem = findPriceForItem(prices, item);
+        calculatedPrice = lastPricedItem?.customPrice || lastPricedItem?.calculated;
+      }
+      if (calculatedPrice) {
+        // Update reference - stackSize is already negativ
+        item.total = item.stackSize * calculatedPrice;
+      }
+    });
   }
 }

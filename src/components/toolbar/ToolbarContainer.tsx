@@ -36,29 +36,44 @@ const ToolbarContainer = () => {
     setProfileOpen(false);
   };
 
-  const activeCurrency = () => {
-    return settingStore?.activeCurrency;
-  };
-
   const handleOverlay = () => {
     //todo: rework to toggle modal instead, with buttons for each overlay
-
-    const income = formatValue(
-      signalrStore!.activeGroup
+    let income: number;
+    let netWorth: number;
+    if (uiStateStore.netWorthSessionOpen) {
+      income = accountStore.getSelectedAccount!.activeProfile!.session.income;
+      netWorth = netWorth = accountStore.getSelectedAccount.activeProfile!.session.netWorthValue;
+    } else {
+      income = signalrStore!.activeGroup
         ? signalrStore!.activeGroup.income
-        : accountStore!.getSelectedAccount!.activeProfile!.income,
-      activeCurrency().short,
+        : accountStore!.getSelectedAccount!.activeProfile!.income;
+      netWorth = signalrStore!.activeGroup
+        ? signalrStore!.activeGroup.netWorthValue
+        : accountStore!.getSelectedAccount!.activeProfile!.netWorthValue;
+    }
+
+    if (settingStore.currency === 'exalt' && priceStore.exaltedPrice) {
+      income = income / priceStore.exaltedPrice;
+    }
+
+    if (settingStore.currency === 'divine' && priceStore.divinePrice) {
+      income = income / priceStore.divinePrice;
+    }
+
+    const formattedIncome = formatValue(
+      income,
+      settingStore.activeCurrency.short,
       true,
       !priceStore.exaltedPrice
     );
 
-    const netWorth = signalrStore!.activeGroup
-      ? signalrStore!.activeGroup.netWorthValue
-      : accountStore!.getSelectedAccount!.activeProfile!.netWorthValue;
-
     overlayStore!.createOverlay({
       event: 'netWorth',
-      data: { netWorth: netWorth, income: income, short: settingStore.activeCurrency.short },
+      data: {
+        netWorth: netWorth,
+        income: formattedIncome,
+        short: settingStore.activeCurrency.short,
+      },
     });
   };
 
@@ -85,6 +100,19 @@ const ToolbarContainer = () => {
 
   const handleRemoveProfile = () => {
     accountStore!.getSelectedAccount.removeActiveProfile();
+  };
+
+  const handleStartSession = () => {
+    accountStore!.getSelectedAccount.activeProfile?.session.startSession();
+  };
+
+  const handlePauseSession = () => {
+    accountStore!.getSelectedAccount.activeProfile?.session.pauseSession();
+  };
+
+  const handleStopSession = () => {
+    accountStore!.getSelectedAccount.activeProfile?.session.stopSession();
+    uiStateStore!.setConfirmStopSessionDialogOpen(false);
   };
 
   const handleSnapshot = () => {
@@ -118,6 +146,15 @@ const ToolbarContainer = () => {
         cancelButtonText={t('action.cancel')}
         loading={uiStateStore!.removingProfile}
       />
+      <ConfirmationDialog
+        show={uiStateStore!.confirmStopSessionDialogOpen}
+        onClose={() => uiStateStore!.setConfirmStopSessionDialogOpen(false)}
+        onConfirm={handleStopSession}
+        title={t('title.confirm_stop_net_worth_session')}
+        body={t('body.stop_net_worth_session')}
+        acceptButtonText={t('action.confirm')}
+        cancelButtonText={t('action.cancel')}
+      />
       <Toolbar
         hasPrices={
           priceStore!.activePricesWithCustomValues &&
@@ -128,6 +165,13 @@ const ToolbarContainer = () => {
         sidenavOpened={uiStateStore!.sidenavOpen}
         autoSnapshotting={settingStore!.autoSnapshotting}
         groupOverviewOpened={uiStateStore!.groupOverviewOpen}
+        sessionStarted={Boolean(
+          accountStore!.getSelectedAccount.activeProfile?.session.sessionStarted
+        )}
+        sessionPaused={Boolean(
+          accountStore!.getSelectedAccount.activeProfile?.session.sessionPaused
+        )}
+        sessionNetWorthOpened={uiStateStore.netWorthSessionOpen}
         profiles={accountStore!.getSelectedAccount.profiles}
         activeProfile={accountStore!.getSelectedAccount.activeProfile}
         toggleAutosnapshot={() =>
@@ -141,6 +185,10 @@ const ToolbarContainer = () => {
         statusMessage={uiStateStore!.statusMessage}
         retryAfter={rateLimitStore.retryAfter}
         profileOpen={profileOpen}
+        toggleSessionNetWorth={() => uiStateStore!.toggleNetWorthSession()}
+        handleSessionStart={handleStartSession}
+        handleSessionPause={handlePauseSession}
+        handleSessionStop={() => uiStateStore!.setConfirmStopSessionDialogOpen(true)}
         handleProfileOpen={handleOpen}
         handleProfileClose={handleClose}
         handleOverlay={handleOverlay}
