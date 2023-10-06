@@ -81,21 +81,21 @@ export class Group implements IApiGroup {
       moment(a.created).isBefore(b.created) ? 1 : -1
     )[0];
 
-    let previousNetworth = getValueForSnapshotsTabs(
+    let previousNetWorth = getValueForSnapshotsTabs(
       this.latestGroupSnapshotsExceptLast(latestSnapshot.uuid)
     );
 
-    let newNetworth = getValueForSnapshotsTabs(this.latestGroupSnapshots);
+    let newNetWorth = getValueForSnapshotsTabs(this.latestGroupSnapshots);
 
     if (rootStore.settingStore.currency === 'exalt' && rootStore.priceStore.exaltedPrice) {
-      newNetworth = newNetworth / rootStore.priceStore.exaltedPrice;
-      previousNetworth = previousNetworth / rootStore.priceStore.exaltedPrice;
+      newNetWorth = newNetWorth / rootStore.priceStore.exaltedPrice;
+      previousNetWorth = previousNetWorth / rootStore.priceStore.exaltedPrice;
     }
     if (rootStore.settingStore.currency === 'divine' && rootStore.priceStore.divinePrice) {
-      newNetworth = newNetworth / rootStore.priceStore.divinePrice;
-      previousNetworth = previousNetworth / rootStore.priceStore.divinePrice;
+      newNetWorth = newNetWorth / rootStore.priceStore.divinePrice;
+      previousNetWorth = previousNetWorth / rootStore.priceStore.divinePrice;
     }
-    return newNetworth - previousNetworth;
+    return newNetWorth - previousNetWorth;
   }
 
   @computed
@@ -153,10 +153,19 @@ export class Group implements IApiGroup {
     ) {
       return [];
     }
+    // Group items are not visible in bulkview
+    const filterText = rootStore.uiStateStore.itemTableFilterText.toLowerCase();
     if (diffSelected) {
-      return filterItems(diffSnapshots(this.latestGroupSnapshots[1], this.latestGroupSnapshots[0]));
+      return filterItems(
+        diffSnapshots(this.latestGroupSnapshots[1], this.latestGroupSnapshots[0]),
+        filterText
+      );
     }
-    return filterSnapshotItems(this.latestGroupSnapshots);
+    return filterSnapshotItems(
+      this.latestGroupSnapshots,
+      filterText,
+      rootStore.uiStateStore.filteredStashTabs
+    );
   }
 
   @computed
