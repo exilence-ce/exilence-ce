@@ -878,7 +878,7 @@ export class Session {
     let offsetPause = this.offsetPause;
     let offsetOffline = this.offsetOffline;
     let Inactive = this.offsetInactive;
-    let offsetManualAdjustment = this.offsetManualAdjustment;
+    // let offsetManualAdjustment = this.offsetManualAdjustment;
 
     if (this.chartPreviewSnapshotId) {
       const index = this.snapshots.findIndex((s) => s.uuid === this.chartPreviewSnapshotId);
@@ -887,23 +887,22 @@ export class Session {
         offsetPause = this.snapshots[index].networthSessionOffsets!.offsetPause;
         offsetOffline = this.snapshots[index].networthSessionOffsets!.offsetOffline;
         Inactive = this.snapshots[index].networthSessionOffsets!.offsetInactive;
-        offsetManualAdjustment = this.snapshots[index].networthSessionOffsets!
-          .offsetManualAdjustment;
+        // offsetManualAdjustment = this.snapshots[index].networthSessionOffsets!
+        //   .offsetManualAdjustment;
       } else {
         sessionDuration = 0;
         offsetPause = 0;
         offsetOffline = 0;
         Inactive = 0;
-        offsetManualAdjustment = 0;
+        // offsetManualAdjustment = 0;
       }
     }
 
     const series: ISessionTimePieChartSeries[] = [
       {
         name: 'Duration',
-        size: '60%',
+        size: '80%',
         dataLabels: {
-          distance: -30,
           enabled: false,
         },
         borderColor: primaryDarker,
@@ -920,85 +919,79 @@ export class Session {
           {
             name: 'Online',
             y: sessionDuration || 0,
-            color: netWorthSessionColors[0],
-            dataLabels: {
-              distance: -30,
-              enabled: true,
+            color: {
+              radialGradient: {
+                cx: 0.6,
+                cy: 0.3,
+                r: 0.8,
+              },
+              stops: [
+                [0, netWorthSessionColors[0]],
+                [1, HC.color(primaryDarker).setOpacity(0.05).get('rgba')],
+              ],
             },
-          },
-          {
-            name: 'Adjustment',
-            y: offsetManualAdjustment || 0,
-            color: netWorthSessionColors[4],
             dataLabels: {
-              distance: 30,
-              enabled: offsetManualAdjustment !== 0,
+              // distance: -30,
+              enabled: true,
             },
           },
           {
             name: 'Pause',
             y: offsetPause || 0,
-            color: netWorthSessionColors[1],
+            color: {
+              radialGradient: {
+                cx: 0.6,
+                cy: 0.3,
+                r: 0.8,
+              },
+              stops: [
+                [0, netWorthSessionColors[1]],
+                [1, HC.color(primaryDarker).setOpacity(0.05).get('rgba')],
+              ],
+            },
+            dataLabels: {
+              enabled: true,
+            },
           },
           {
             name: 'Offline',
             y: offsetOffline || 0,
-            color: netWorthSessionColors[2],
+            color: {
+              radialGradient: {
+                cx: 0.6,
+                cy: 0.3,
+                r: 0.8,
+              },
+              stops: [
+                [0, netWorthSessionColors[2]],
+                [1, HC.color(primaryDarker).setOpacity(0.05).get('rgba')],
+              ],
+            },
+            dataLabels: {
+              enabled: true,
+            },
           },
           {
             name: 'Inactiv',
             y: Inactive || 0,
-            color: netWorthSessionColors[3],
+            color: {
+              radialGradient: {
+                cx: 0.6,
+                cy: 0.3,
+                r: 0.8,
+              },
+              stops: [
+                [0, netWorthSessionColors[3]],
+                [1, HC.color(primaryDarker).setOpacity(0.05).get('rgba')],
+              ],
+            },
+            dataLabels: {
+              enabled: true,
+            },
           },
         ],
       },
     ];
-
-    series.push({
-      name: 'Breakdown',
-      size: '80%',
-      innerSize: '60%',
-      borderColor: primaryDarker,
-      tooltip: {
-        pointFormatter: function () {
-          return `<span style="fill:${
-            this.color
-          }">\u25CF</span> Duration: <span style="font-weight:bold;">${getFormattedDuration(
-            this.y
-          )}</span>`;
-        },
-      },
-      data: [
-        {
-          name: 'Online',
-          y: sessionDuration + offsetManualAdjustment || 0,
-          color: HC.color(netWorthSessionColors[0]).setOpacity(0.5).brighten(0.2).get(),
-          dataLabels: {
-            enabled: false,
-          },
-        },
-        {
-          name: 'Adjustment',
-          y: -(offsetManualAdjustment || 0),
-          color: HC.color(netWorthSessionColors[4]).setOpacity(0.5).brighten(0.2).get(),
-        },
-        {
-          name: 'Pause',
-          y: offsetPause || 0,
-          color: HC.color(netWorthSessionColors[1]).setOpacity(0.5).brighten(0.2).get(),
-        },
-        {
-          name: 'Offline',
-          y: offsetOffline || 0,
-          color: HC.color(netWorthSessionColors[2]).setOpacity(0.5).brighten(0.2).get(),
-        },
-        {
-          name: 'Inactiv',
-          y: Inactive || 0,
-          color: HC.color(netWorthSessionColors[3]).setOpacity(0.5).brighten(0.2).get(),
-        },
-      ],
-    });
 
     return series;
   }
