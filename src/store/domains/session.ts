@@ -244,10 +244,10 @@ export class Session {
     );
 
     if (this.addNextSnapshotDiffToBase) {
-      // First snapshot after the profile is activ again - remove the diffitems while inactiv
+      // First snapshot after the profile is activ again - remove the diffitems while inactive
       const diffSnapshotWhileInactiv = mergeFromDiffSnapshotStashTabs(
-        mapSnapshotToApiSnapshot(this.snapshots[0]), // Snapshot before inactiv
-        diffSnapshot, // Snapshot after inactiv
+        mapSnapshotToApiSnapshot(this.snapshots[0]), // Snapshot before inactive
+        diffSnapshot, // Snapshot after inactive
         this.profile?.diffSnapshotPriceResolver
       );
 
@@ -972,7 +972,7 @@ export class Session {
             },
           },
           {
-            name: 'Inactiv',
+            name: 'Inactive',
             y: Inactive || 0,
             color: {
               radialGradient: {
@@ -1064,7 +1064,7 @@ export class Session {
         seriesName = 'Offline';
         colorIndex = 2;
       } else {
-        seriesName = 'Inactiv';
+        seriesName = 'Inactive';
         colorIndex = 3;
       }
 

@@ -154,10 +154,10 @@ test('Save new snapshot after being active again', () => {
     expect(s.pricedItems).not.toContainObject({ name: 'Divine Orb' });
   });
 
-  // First snapshot after the profile is activ again - remove the diffitems while inactiv
+  // First snapshot after the profile is activ again - remove the diffitems while inactive
   const diffSnapshotWhileInactiv = mergeFromDiffSnapshotStashTabs(
-    diffSnapshotBeforeInactiv, // Snapshot before inactiv
-    diffSnapshot // Snapshot after inactiv
+    diffSnapshotBeforeInactiv, // Snapshot before inactive
+    diffSnapshot // Snapshot after inactive
   );
 
   diffSnapshotWhileInactiv.stashTabs.forEach((s) => {
@@ -184,16 +184,16 @@ test('Save new snapshot after being active again', () => {
     expect(s.pricedItems).toContainObject({ name: 'Orb of Scouring', stackSize: 25 });
     // Diff +10; Target: 0; => 0 (old current) +10 (diff) = 10 (new current)
     // => 10 (new Snapshot) - 10 (new current) = 0 (Taget)
-    expect(s.pricedItems).toContainObject({ name: 'Chaos Orb', stackSize: 10 }); // Add value while inactiv (10 added, Total 10)
+    expect(s.pricedItems).toContainObject({ name: 'Chaos Orb', stackSize: 10 }); // Add value while inactive (10 added, Total 10)
     // Diff -5; Target: 20; => 0 (old current) -5 (diff) = -5 (new current)
     // => 15 (new Snapshot) - (-5) (new current) = 20 (Taget)
-    expect(s.pricedItems).toContainObject({ name: 'Jeweller Orb', stackSize: -5 }); // Remove value while inactiv (5 removed; Total 15)
+    expect(s.pricedItems).toContainObject({ name: 'Jeweller Orb', stackSize: -5 }); // Remove value while inactive (5 removed; Total 15)
     // Diff -10; Target: 10; => 0 (old current) -10 (diff) = -10 (new current)
     // => 0 (new Snapshot) - -(10) (new current) = 10 (Taget)
-    expect(s.pricedItems).toContainObject({ name: 'Awakened Sextant', stackSize: -10 }); // Remove value while inactiv (10 removed; Total 0)
+    expect(s.pricedItems).toContainObject({ name: 'Awakened Sextant', stackSize: -10 }); // Remove value while inactive (10 removed; Total 0)
     // Diff 25; Target: -15; => 20 (old current) +25 (diff) = 45 (new current)
     // => 30 (new Snapshot) - 45 (new current) = -15 (Taget)
-    expect(s.pricedItems).toContainObject({ name: 'Orb of Fusing', stackSize: 45 }); // Remove value while inactiv
+    expect(s.pricedItems).toContainObject({ name: 'Orb of Fusing', stackSize: 45 }); // Remove value while inactive
     // Diff 0; Target: 0; => 5 (old current) +0 (diff) = 5 (new current)
     // => 5 (new Snapshot) - 5 (new current) = 0 (Taget)
     expect(s.pricedItems).toContainObject({ name: 'Divine Orb', stackSize: 5 });
@@ -205,10 +205,10 @@ test('Save new snapshot after being active again', () => {
   // Remove influence completly
   diffSnapshot.stashTabs.forEach((s) => {
     expect(s.pricedItems).not.toContainObject({ name: 'Orb of Scouring' }); // No Scoring
-    expect(s.pricedItems).toContainObject({ name: 'Jeweller Orb', stackSize: 20 }); // Diff before inactiv
+    expect(s.pricedItems).toContainObject({ name: 'Jeweller Orb', stackSize: 20 }); // Diff before inactive
     expect(s.pricedItems).not.toContainObject({ name: 'Chaos Orb' }); // No Chaos
-    expect(s.pricedItems).toContainObject({ name: 'Awakened Sextant', stackSize: 10 }); // Diff before inactiv
-    expect(s.pricedItems).toContainObject({ name: 'Orb of Fusing', stackSize: -15 }); // Diff before inactiv
+    expect(s.pricedItems).toContainObject({ name: 'Awakened Sextant', stackSize: 10 }); // Diff before inactive
+    expect(s.pricedItems).toContainObject({ name: 'Orb of Fusing', stackSize: -15 }); // Diff before inactive
     expect(s.pricedItems).not.toContainObject({ name: 'Divine Orb' }); // No Divine - no changes at all
   });
 });
