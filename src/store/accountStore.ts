@@ -3,6 +3,7 @@ import axios from 'axios-observable';
 import { action, autorun, computed, makeObservable, observable, runInAction } from 'mobx';
 import { persist } from 'mobx-persist';
 import { fromStream } from 'mobx-utils';
+import moment from 'moment';
 import { forkJoin, of, Subject, throwError, timer } from 'rxjs';
 import { catchError, concatMap, map, switchMap, takeUntil } from 'rxjs/operators';
 import { v4 as uuidv4 } from 'uuid';
@@ -34,20 +35,22 @@ export class AccountStore {
     electronService.ipcRenderer.on('auth-callback', (_event, { code, error }) => {
       this.handleAuthCallback(code, error);
     });
-    electronService.ipcRenderer.on('offline-net-worth-session', () => {
-      let stateChanged = false;
+
+    electronService.ipcRenderer.on('app-activity-signal', () => {
+      const now = moment.utc().valueOf();
       this.accounts.forEach((account) => {
+        if (account.uuid != this.activeAccount) return;
         account.profiles.forEach((profile) => {
-          if (profile.session.offlineSession()) {
-            stateChanged = true;
+          if (
+            profile.session &&
+            profile.session.sessionStarted &&
+            profile.session.lastSessionActivityEvaluated
+          ) {
+            // Do only write new timestamps if the session is evaluated
+            profile.session.lastSessionActivity = now;
           }
         });
       });
-      if (!stateChanged) return electronService.ipcRenderer.send('closed');
-      setTimeout(() => {
-        electronService.ipcRenderer.send('closed');
-        // TODO: If closed to early, the states are not saved to indexDB; Is there any hook/callback?
-      }, 1000);
     });
 
     autorun(() => {

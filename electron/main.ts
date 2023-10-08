@@ -53,6 +53,7 @@ let isQuitting: boolean;
 let updateAvailable: boolean;
 let deeplinkingUrl: any;
 let trayProps: CreateTrayProps;
+let activityTrackerInterval: NodeJS.Timeout | undefined;
 
 /**
  * Local Settings
@@ -102,16 +103,7 @@ function createWindow() {
       );
 
   browserWindows[MAIN_BROWSER_WINDOW].on('close', (e: Event) => {
-    if (getLocalSettings().appExitAction === 'exit') {
-      // http://www.matthiassommer.it/programming/frontend/two-ways-to-react-on-the-electron-close-event/
-      if (browserWindows[MAIN_BROWSER_WINDOW]) {
-        e.preventDefault();
-        // Signal the session to switch to offline. After this, the session will emit the "closed" event to ipcMain
-        browserWindows[MAIN_BROWSER_WINDOW].webContents.send('offline-net-worth-session');
-      }
-
-      return;
-    }
+    if (getLocalSettings().appExitAction === 'exit') return;
     if (!isQuitting) {
       e.preventDefault();
       browserWindows[MAIN_BROWSER_WINDOW].hide();
@@ -132,16 +124,6 @@ function createWindow() {
       appPath,
       appLocale,
     };
-  });
-
-  /**
-   * NetWorth session handlers
-   */
-  ipcMain.on('closed', () => {
-    browserWindows[MAIN_BROWSER_WINDOW] = null;
-    if (process.platform !== 'darwin') {
-      app.quit();
-    }
   });
 
   /**
@@ -230,6 +212,12 @@ function createWindow() {
   if (browserWindows[MAIN_BROWSER_WINDOW] instanceof BrowserWindow) {
     browserWindows[MAIN_BROWSER_WINDOW].once('ready-to-show', () => {
       browserWindows[MAIN_BROWSER_WINDOW].show();
+
+      if (activityTrackerInterval === undefined) {
+        activityTrackerInterval = setInterval(() => {
+          browserWindows[MAIN_BROWSER_WINDOW].webContents.send('app-activity-signal');
+        }, 1000);
+      }
     });
   }
 }

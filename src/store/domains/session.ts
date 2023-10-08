@@ -79,6 +79,9 @@ export class Session {
 
   reactionDisposer: IReactionDisposer[] = [];
 
+  lastSessionActivityEvaluated: boolean = false;
+  @persist lastSessionActivity: number = 0;
+
   constructor(profileId: string) {
     makeObservable(this);
     this.profileId = profileId;
@@ -365,6 +368,19 @@ export class Session {
   @action
   updateSession() {
     if (!this.profile) return;
+    // Interval not started => Resolve last activity
+    if (this.sessionStarted && this.lastSessionActivity) {
+      const lastActivityTracked = moment.utc(this.lastSessionActivity + 1000);
+      const diff = moment.utc().diff(lastActivityTracked);
+      if (diff > 5000) {
+        // Exilence offline timespan detected
+        this.resolveTime(lastActivityTracked);
+        this.lastOfflineAt = lastActivityTracked.valueOf();
+      }
+    }
+    // Now write activity tracker information back
+    this.lastSessionActivityEvaluated = true;
+
     if (!this.profile.active) {
       this.disableSession();
     } else {
@@ -380,9 +396,9 @@ export class Session {
   //#endregion
 
   //#region Time manipulation
-  createTimestamp(time: number, type: TimestapTypes): ITimeStamp {
+  createTimestamp(time: number, type: TimestapTypes, refTime?: moment.Moment): ITimeStamp {
     const lastTime = moment.utc(time);
-    const now = moment.utc();
+    const now = refTime ? refTime : moment.utc();
     const diff = now.diff(lastTime);
     return {
       uuid: uuidv4(),
@@ -395,8 +411,8 @@ export class Session {
   }
 
   @action
-  resolveLast(time: number, type: TimestapTypes) {
-    const timestamp = this.createTimestamp(time, type);
+  resolveLast(time: number, type: TimestapTypes, refTime?: moment.Moment) {
+    const timestamp = this.createTimestamp(time, type, refTime);
     if (this.timeStamps.length > 0 && this.timeStamps[0].type === type) {
       this.timeStamps[0].end = timestamp.end;
       this.timeStamps[0].duration += timestamp.duration;
@@ -412,29 +428,34 @@ export class Session {
     return timestamp;
   }
 
-  @action
-  resolveTimeAndContinueWith(continueWith: TimestapTypesExtended) {
+  resolveTime(refTime?: moment.Moment) {
     let lastType: TimestapTypes = 'pause';
     if (this.lastStartAt) {
-      this.resolveLast(this.lastStartAt, 'start');
+      this.resolveLast(this.lastStartAt, 'start', refTime);
       this.lastStartAt = undefined;
       lastType = 'start';
     } else if (this.lastPauseAt) {
-      const timestamp = this.resolveLast(this.lastPauseAt, 'pause');
+      const timestamp = this.resolveLast(this.lastPauseAt, 'pause', refTime);
       this.offsetPause += timestamp.duration;
       this.lastPauseAt = undefined;
       lastType = 'pause';
     } else if (this.lastOfflineAt) {
-      const timestamp = this.resolveLast(this.lastOfflineAt, 'offline');
+      const timestamp = this.resolveLast(this.lastOfflineAt, 'offline', refTime);
       this.offsetOffline += timestamp.duration;
       this.lastOfflineAt = undefined;
       lastType = 'offline';
     } else if (this.lastInactiveAt) {
-      const timestamp = this.resolveLast(this.lastInactiveAt, 'inactive');
+      const timestamp = this.resolveLast(this.lastInactiveAt, 'inactive', refTime);
       this.offsetInactive += timestamp.duration;
       this.lastInactiveAt = undefined;
       lastType = 'inactive';
     }
+    return lastType;
+  }
+
+  @action
+  resolveTimeAndContinueWith(continueWith: TimestapTypesExtended, refTime?: moment.Moment) {
+    const lastType = this.resolveTime(refTime);
     if (continueWith === 'start' || (continueWith === 'keeplast' && lastType === 'start')) {
       this.lastStartAt = moment.utc().valueOf();
       this.sessionStarted = true;
