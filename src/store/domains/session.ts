@@ -544,19 +544,23 @@ export class Session {
     if (this.snapshots.length < 2) return 0;
     const timestampToUse = moment.utc(timestamp);
     const snapshots = this.snapshots.filter((s) => moment(s.created).utc().isAfter(timestampToUse));
-    if (snapshots.length === this.snapshots.length || snapshots.length === 0) return 0;
-    const prevSnapshot = this.snapshots[snapshots.length];
-    const firstSnapshotValue = calculateRelativeTimeStampValue(
-      {
-        created: moment(new Date(prevSnapshot.created).getTime()).valueOf(),
-        value: getValueForSnapshot(mapSnapshotToApiSnapshot(prevSnapshot)),
-      },
-      timestamp,
-      {
-        created: moment(new Date(snapshots[snapshots.length - 1].created).getTime()).valueOf(),
-        value: getValueForSnapshot(mapSnapshotToApiSnapshot(snapshots[snapshots.length - 1])),
-      }
-    );
+    if (snapshots.length === 0) return 0;
+    let firstSnapshotValue = 0;
+    if (snapshots.length < this.snapshots.length) {
+      const prevSnapshot = this.snapshots[snapshots.length];
+      firstSnapshotValue = calculateRelativeTimeStampValue(
+        {
+          created: moment(new Date(prevSnapshot.created).getTime()).valueOf(),
+          value: getValueForSnapshot(mapSnapshotToApiSnapshot(prevSnapshot)),
+        },
+        timestamp,
+        {
+          created: moment(new Date(snapshots[snapshots.length - 1].created).getTime()).valueOf(),
+          value: getValueForSnapshot(mapSnapshotToApiSnapshot(snapshots[snapshots.length - 1])),
+        }
+      );
+    }
+
     const elapsedTime = moment(snapshots[0].created).diff(moment.utc(timestamp));
     let hoursToCalcOver = elapsedTime / 1000 / 60 / 60;
     hoursToCalcOver = hoursToCalcOver >= 1 ? hoursToCalcOver : 1;
@@ -909,7 +913,8 @@ export class Session {
         tooltip: {
           pointFormatter: function () {
             return `<span style="fill:${
-              this.color
+              // @ts-ignore
+              this.dotColor
             }">\u25CF</span> Duration: <span style="font-weight:bold;">${getFormattedDuration(
               this.y
             )}</span>`;
@@ -927,9 +932,10 @@ export class Session {
               },
               stops: [
                 [0, netWorthSessionColors[0]],
-                [1, HC.color(primaryDarker).setOpacity(0.05).get('rgba')],
+                [1, HC.color(primaryDarker).setOpacity(0.2).get('rgba')],
               ],
             },
+            dotColor: netWorthSessionColors[0],
             dataLabels: {
               // distance: -30,
               enabled: true,
@@ -946,9 +952,10 @@ export class Session {
               },
               stops: [
                 [0, netWorthSessionColors[1]],
-                [1, HC.color(primaryDarker).setOpacity(0.05).get('rgba')],
+                [1, HC.color(primaryDarker).setOpacity(0.2).get('rgba')],
               ],
             },
+            dotColor: netWorthSessionColors[1],
             dataLabels: {
               enabled: true,
             },
@@ -964,9 +971,10 @@ export class Session {
               },
               stops: [
                 [0, netWorthSessionColors[2]],
-                [1, HC.color(primaryDarker).setOpacity(0.05).get('rgba')],
+                [1, HC.color(primaryDarker).setOpacity(0.2).get('rgba')],
               ],
             },
+            dotColor: netWorthSessionColors[2],
             dataLabels: {
               enabled: true,
             },
@@ -982,9 +990,10 @@ export class Session {
               },
               stops: [
                 [0, netWorthSessionColors[3]],
-                [1, HC.color(primaryDarker).setOpacity(0.05).get('rgba')],
+                [1, HC.color(primaryDarker).setOpacity(0.2).get('rgba')],
               ],
             },
+            dotColor: netWorthSessionColors[3],
             dataLabels: {
               enabled: true,
             },

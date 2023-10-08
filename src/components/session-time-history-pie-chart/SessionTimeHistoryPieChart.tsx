@@ -1,5 +1,4 @@
 import React from 'react';
-import HC from 'highcharts';
 import { Box } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { ISessionTimePieChartSeries } from '../../interfaces/connection-chart-series.interface';

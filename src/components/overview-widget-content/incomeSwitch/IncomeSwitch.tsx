@@ -4,7 +4,6 @@ import ChangeCircleIcon from '@mui/icons-material/ChangeCircle';
 import { useTranslation } from 'react-i18next';
 import useStyles from './IncomeSwitch.styles';
 import { useStores } from '../../..';
-import { NetWorthSessionIncomeMode } from '../../../types/net-worth-session-income-mode.type';
 import { formatValue } from '../../../utils/snapshot.utils';
 import { observer } from 'mobx-react-lite';
 
