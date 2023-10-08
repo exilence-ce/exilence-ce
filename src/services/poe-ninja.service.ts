@@ -40,6 +40,7 @@ function getItemCategories() {
     //'Prophecy',
     'SkillGem',
     'Tattoo',
+    'Omen',
     'UniqueMap',
     'Map',
     'UniqueJewel',

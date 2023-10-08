@@ -7,10 +7,20 @@ import AppConfig from './app.config';
 const path = require('path');
 const url = require('url');
 
+declare global {
+  interface Window {
+    OsDetection: any;
+  }
+}
+
 function getTranslationPath(lng: string, ns: string) {
+  const isWin = window.OsDetection.isWin();
   const langPath = `/i18n/${lng}/${ns}.json`;
   const fullPath = url.format({
-    pathname: path.join(electronService.appPath, `../public/${langPath}`),
+    pathname: path.join(
+      electronService.appPath,
+      isWin ? `../public/${langPath}` : `../${langPath}`
+    ),
     protocol: 'file:',
     slashes: true,
   });

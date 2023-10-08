@@ -78,13 +78,20 @@ function createWindow() {
     height,
     minWidth: browserWindowsConfig[MAIN_BROWSER_WINDOW].width,
     minHeight: browserWindowsConfig[MAIN_BROWSER_WINDOW].height,
-    webPreferences: { webSecurity: false, nodeIntegration: true, contextIsolation: false },
+    webPreferences: {
+      webSecurity: false,
+      nodeIntegration: true,
+      contextIsolation: false,
+      preload: path.join(__dirname, './preload.js'),
+    },
     frame: false,
     show: false,
   });
 
   manage(browserWindows[MAIN_BROWSER_WINDOW]);
-  browserWindows[MAIN_BROWSER_WINDOW].webContents.userAgent = `OAuth exilencece/1.2.3 (contact: exilencece@gmail.com) StrictMode`;
+  browserWindows[
+    MAIN_BROWSER_WINDOW
+  ].webContents.userAgent = `OAuth exilencece/1.2.3 (contact: exilencece@gmail.com) StrictMode`;
 
   isDev
     ? browserWindows[MAIN_BROWSER_WINDOW].loadURL(
