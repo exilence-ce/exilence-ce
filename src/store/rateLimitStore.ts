@@ -148,20 +148,23 @@ export class RateLimitStore {
       const delta = serverLimit.state - limit.stack.length;
 
       if (delta === 0) {
-        DEBUG && console.log(`<${policy}> Limits are in sync`);
+        DEBUG && console.log(`Limits are in sync ` + limit.toString());
       } else if (delta > 0) {
         DEBUG &&
           console.error(
-            `<${policy}> Rate limit state on Server is greater by ${Math.abs(
+            `Rate limit state on Server is greater by ${Math.abs(
               delta
-            )}. Bursting to prevent rate limiting.`
+            )}. Bursting to prevent rate limiting. ` + limit.toString()
           );
         for (let i = 0; i < Math.min(delta, limit.available); ++i) {
           // eslint-disable-next-line @typescript-eslint/no-floating-promises
           limit.wait();
         }
       } else if (delta < 0) {
-        DEBUG && console.warn(`Rate limit state on Client is greater by ${Math.abs(delta)}`);
+        DEBUG &&
+          console.warn(
+            `Rate limit state on Client is greater by ${Math.abs(delta)} ` + limit.toString()
+          );
       }
     }
 

@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-floating-promises,
                   @typescript-eslint/promise-function-async,
                   @typescript-eslint/return-await */
-import { action, computed, makeObservable, observable, runInAction } from 'mobx';
+import { action, computed, makeObservable, observable } from 'mobx';
 import { persist } from 'mobx-persist';
 import moment from 'moment';
+
+const DEBUG = true;
 
 class ResourceHandle {
   @persist borrowedAt!: number;
@@ -20,7 +22,6 @@ class ResourceHandle {
     this.borrowedAt = moment.utc().valueOf();
     this.releasedAt = this.borrowedAt + millis;
     this._cb = cb;
-
     this.promise = new Promise((resolve, reject) => {
       this._resolve = resolve;
       this._reject = reject;
@@ -32,14 +33,27 @@ class ResourceHandle {
     });
   }
 
-  public cancel(reason?: any) {
+  public get isRunning() {
+    // @ts-ignore
+    return Boolean(this._tmid && this.promise && this._cb && this._resolve && this._reject);
+  }
+
+  public destroy(reason?: any) {
     clearTimeout(this._tmid);
     this._cb();
     this._reject(reason);
   }
 
+  public cancel() {
+    clearTimeout(this._tmid);
+  }
+
   // In case of retry-after
   public regenerate(millis: number) {
+    if (!this.isRunning) {
+      DEBUG && console.error('Trying to regenerate handle which is not running');
+      return;
+    }
     clearTimeout(this._tmid);
     this.borrowedAt = moment.utc().valueOf();
     this.releasedAt = this.borrowedAt + millis;
@@ -87,21 +101,21 @@ export class RateLimiter {
   @action
   restore() {
     // // MobX - Restore states
-    if (this.retryAfter) {
-      this.applyRetryAfter(this.retryAfter);
-    } else if (this.stack?.length > 0) {
+    if (this.stack?.length > 0) {
+      let i = 0;
       for (const handle of this.stack) {
+        i++;
+        DEBUG && console.info(`Restore handle ${i} ` + this.toString());
         handle.restore(() => {
-          const idx = this.stack.indexOf(handle);
-          if (idx !== -1) {
-            runInAction(() => {
-              this.stack.splice(idx, 1);
-              this.DEBUG && console.log('Removed restored stack ' + this.toString());
-            });
-          }
+          this.removeStack(handle);
         });
       }
-      this.DEBUG && console.log('Restored stacks ' + this.toString());
+      DEBUG && console.log('Restored stacks ' + this.toString());
+    }
+
+    // The ResourceHandle must be bestored before they can regenerate to a new timestamp
+    if (this.retryAfter) {
+      this.applyRetryAfter(this.retryAfter);
     }
   }
 
@@ -114,10 +128,9 @@ export class RateLimiter {
 
     if (this.isFullyUtilized) {
       this.queue.value++;
-      this.DEBUG && console.log('IsFullyUtilized: Before ' + this.toString());
-      await this.stack[0].promise;
+      DEBUG && console.log('IsFullyUtilized ' + this.toString());
+      await this.waitHandle();
       this.queue.value--;
-      this.DEBUG && console.log('IsFullyUtilized: After ' + this.toString());
       return this._wait(borrow);
     } else {
       if (borrow) {
@@ -126,35 +139,48 @@ export class RateLimiter {
     }
   }
 
+  private async waitHandle() {
+    if (!this.stack[0].isRunning) {
+      DEBUG && console.warn('Waiting for an dead stack ' + this.toString());
+      this.removeStack(this.stack[0]);
+    } else {
+      await this.stack[0].promise;
+    }
+  }
+
   @action
   private push(millies = 0, isRetryAfter: boolean = false) {
     const handle = new ResourceHandle(millies || this.window * 1000, () => {
-      const idx = this.stack.indexOf(handle);
-      if (idx !== -1) {
-        runInAction(() => {
-          this.stack.splice(idx, 1);
-          this.DEBUG && console.log('Removed stack:  ' + this.toString());
-        });
-      }
+      this.removeStack(handle);
       if (isRetryAfter) {
         this.retryAfter = undefined;
       }
     });
     this.stack.push(handle);
-    this.DEBUG && console.log('Pushed stack:  ' + this.toString());
+    DEBUG && console.log('Pushed stack:  ' + this.toString());
+  }
+
+  @action
+  private removeStack(handle: ResourceHandle, restored = false) {
+    const idx = this.stack.indexOf(handle);
+    if (idx !== -1) {
+      this.stack.splice(idx, 1);
+      DEBUG && console.log(`Removed ${restored ? 'restored ' : ''}stack: ` + this.toString());
+    }
   }
 
   @action
   applyRetryAfter(retryAfter: number) {
     this.retryAfter = retryAfter;
     const duration = moment.utc(this.retryAfter).diff(moment.utc());
+    DEBUG && console.warn(`ApplyRetryAfter wait ${duration}: ${this.toString()}`);
     for (const handle of this.stack) {
       handle.regenerate(duration);
     }
     while (!this.isFullyUtilized) {
       this.push(duration, true);
     }
-    this.DEBUG && console.warn(`ApplyRetryAfter: ${this.toString()}`);
+    DEBUG && console.warn(`ApplyRetryAfter: ${this.toString()}`);
   }
 
   static async waitMulti(limiters: Iterable<RateLimiter>): Promise<void> {
@@ -165,7 +191,7 @@ export class RateLimiter {
       _limiters.map((rl) => {
         if (rl.retryAfter) {
           const duration = moment.utc(rl.retryAfter).diff(moment.utc());
-          console.log(`Retry after: ${duration / 1000}s - ${rl.toString()}`);
+          DEBUG && console.log(`Retry after: ${duration / 1000}s - ${rl.toString()}`);
           return new Promise((resolve) => {
             setTimeout(resolve, duration);
           });
@@ -253,7 +279,7 @@ export class RateLimiter {
     this._destroyed = true;
     if (this.queue.value) {
       // shortcircuit awaiters in queue
-      this.stack[0].cancel(new Error('RateLimiter is no longer active'));
+      this.stack[0].destroy(new Error('RateLimiter is no longer active'));
     }
   }
 
