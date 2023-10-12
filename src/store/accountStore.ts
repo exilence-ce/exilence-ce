@@ -239,8 +239,8 @@ export class AccountStore {
             !skipAuth ? this.getSelectedAccount.authorize() : of({})
           ).pipe(
             concatMap((requests) => {
-              const leagues: ILeague[] = requests[0].data;
-              const characters: ICharacter[] = requests[1].data.characters;
+              const leagues: ILeague[] = requests[0];
+              const characters: ICharacter[] = requests[1].characters;
               const unsupportedLeagues = ['Path of Exile: Royale'];
 
               if (leagues.length === 0) {

@@ -28,7 +28,7 @@ function configureAxios() {
       }
       if (error.response?.status === 429) {
         rootStore.accountStore.cancelRetries();
-        const retryAfter = error.response?.headers['retry-after'];
+        const retryAfter = error.response?.headers['retry-after'] as number | undefined;
         if (retryAfter) {
           rootStore.rateLimitStore.setRetryAfter(+retryAfter);
         }

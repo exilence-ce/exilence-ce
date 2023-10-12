@@ -27,7 +27,17 @@ const StatusMessage = ({ statusMessage, infoLabel, isSnapshotting }: StatusMessa
                 {statusMessage.currentCount} / {statusMessage.totalCount}
               </>
             )}{' '}
-            ...
+            ...{' '}
+            {statusMessage.estimatedTime !== undefined &&
+            statusMessage.estimatedTimeTotal !== undefined
+              ? `Estimated Time: ${statusMessage.estimatedTime} / ${statusMessage.estimatedTimeTotal}`
+              : (statusMessage.estimatedTime !== undefined && statusMessage.estimatedTimeTotal) ||
+                undefined
+              ? `Estimated Time: ${Math.max(
+                  statusMessage.estimatedTime || 0,
+                  statusMessage.estimatedTimeTotal || 0
+                )}`
+              : ''}
           </Typography>
           {infoLabel && isSnapshotting && (
             <Tooltip title={infoLabel || ''} placement="bottom">

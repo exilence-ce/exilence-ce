@@ -501,18 +501,25 @@ export class Profile {
       return this.getItemsFail(new Error('no_matching_league'), this.activeLeagueId);
     }
 
-    rootStore.uiStateStore.setStatusMessage('refreshing_stash_tabs');
+    const selectedStashTabs = accountLeague.stashtabList.filter(
+      (st) => this.activeStashTabIds.find((ast) => ast === st.id) !== undefined
+    );
+
+    rootStore.uiStateStore.setStatusMessage(
+      'refreshing_stash_tabs',
+      rootStore.rateLimitStore.getEstimatedSnapshotTime(selectedStashTabs.length)
+    );
 
     fromStream(
-      accountLeague.getStashTabs(true).pipe(
-        mergeMap((response) => of(this.refreshStashTabsSuccess(league.id, response))),
+      accountLeague.getStashTabs().pipe(
+        mergeMap(() => of(this.refreshStashTabsSuccess(league.id))),
         takeUntil(rootStore.uiStateStore.cancelSnapshot),
         catchError((e: AxiosError) => of(this.refreshStashTabsFail(e, league.id)))
       )
     );
   }
 
-  @action refreshStashTabsSuccess(leagueId: string, firstStashTab?: IStashTab) {
+  @action refreshStashTabsSuccess(leagueId: string) {
     rootStore.notificationStore.createNotification(
       'refreshing_stash_tabs',
       'success',
@@ -520,7 +527,7 @@ export class Profile {
       undefined,
       leagueId
     );
-    this.getItems(firstStashTab);
+    this.getItems();
   }
 
   @action refreshStashTabsFail(e: AxiosError | Error, leagueId: string) {
@@ -534,7 +541,7 @@ export class Profile {
     this.snapshotFail();
   }
 
-  @action getItems(firstStashTab?: IStashTab) {
+  @action getItems() {
     const accountLeague = rootStore.accountStore.getSelectedAccount.accountLeagues.find(
       (al) => al.leagueId === this.activeLeagueId
     );
@@ -556,11 +563,9 @@ export class Profile {
       );
     }
 
-    const tabsToFetch = firstStashTab ? selectedStashTabs.slice(1) : selectedStashTabs;
-
     const getMainTabsWithChildren =
-      tabsToFetch.length > 0
-        ? from(tabsToFetch).pipe(
+      selectedStashTabs.length > 0
+        ? from(selectedStashTabs).pipe(
             concatMap((tab: IStashTab) => externalService.getStashTabWithChildren(tab, league.id)),
             toArray()
           )
@@ -582,17 +587,10 @@ export class Profile {
           : of(null)
       ).pipe(
         switchMap((response) => {
-          let combinedTabs = response[0];
-          if (firstStashTab) {
-            combinedTabs = combinedTabs.concat([firstStashTab]);
-          }
-          let subTabs: IStashTab[] = response[0]
+          const combinedTabs = response[0];
+          const subTabs = combinedTabs
             .filter((sst) => sst.children)
             .flatMap((sst) => sst.children ?? sst);
-          subTabs =
-            firstStashTab && firstStashTab.children
-              ? subTabs.concat(firstStashTab.children)
-              : subTabs;
           // if no subtabs exist, simply return the original request
           if (subTabs.length === 0) {
             response[0] = combinedTabs;
@@ -630,15 +628,15 @@ export class Profile {
           });
 
           const characterWithItems = result[1];
-          if (characterWithItems?.data) {
+          if (characterWithItems) {
             let includedCharacterItems: IPricedItem[] = [];
             if (this.includeInventory) {
-              const inventory = characterWithItems?.data?.character.inventory;
+              const inventory = characterWithItems?.character.inventory;
               const mappedInventory = inventory ? mapItemsToPricedItems(inventory) : [];
               includedCharacterItems = includedCharacterItems.concat(mappedInventory);
             }
             if (this.includeEquipment) {
-              const equipment = characterWithItems?.data?.character.equipment;
+              const equipment = characterWithItems?.character.equipment;
               const mappedEquipment = equipment ? mapItemsToPricedItems(equipment) : [];
               includedCharacterItems = includedCharacterItems.concat(mappedEquipment);
             }

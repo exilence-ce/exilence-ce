@@ -151,26 +151,7 @@ const renderApp = () => {
   ])
     .then(() => {
       rootStore.settingStore.setUiScale(rootStore.settingStore.uiScale);
-      // if last stash tab request is sent less than 5 min ago, put on cooldown
-      const fiveMinutesAgo = moment().utc().subtract(5, 'minutes');
-      if (rootStore.rateLimitStore.lastRequestTimestamp) {
-        const limits = rootStore.rateLimitStore.lastRateLimitBoundaries;
-        const state = rootStore.rateLimitStore.lastRateLimitState;
-        if (limits && state) {
-          const innerTokensLeft = limits?.inner.tokens - state?.inner.tokens < 3;
-          const outerTokensLeft = limits?.outer.tokens - state?.outer.tokens < 3;
-
-          const requestRecently = moment(rootStore.rateLimitStore.lastRequestTimestamp)
-            .utc()
-            .isAfter(fiveMinutesAgo);
-          if (requestRecently && (innerTokensLeft || outerTokensLeft)) {
-            const duration = moment.duration(
-              moment(rootStore.rateLimitStore.lastRequestTimestamp).diff(fiveMinutesAgo)
-            );
-            rootStore.rateLimitStore.setRetryAfter(duration.asSeconds());
-          }
-        }
-      }
+      rootStore.rateLimitStore.limiters.forEach((pls) => pls.forEach((rl) => rl.restore()));
       visitor = ua(AppConfig.trackingId, rootStore.uiStateStore.userId);
       ReactDOM.render(<App />, document.getElementById('root'));
     })

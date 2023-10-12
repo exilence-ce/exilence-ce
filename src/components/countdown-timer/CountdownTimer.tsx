@@ -11,7 +11,7 @@ type CountdownTimerProps = {
 const CountdownTimer = ({ comparison }: CountdownTimerProps) => {
   const { rateLimitStore } = useStores();
   const calculateTimeLeft = () => {
-    const difference = comparison - +new Date();
+    const difference = comparison - new Date().valueOf();
     let timeLeft = 0;
 
     if (difference > 0) {

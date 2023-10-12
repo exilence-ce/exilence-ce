@@ -1,9 +1,8 @@
 import { AxiosError, AxiosResponse } from 'axios';
 import { action, computed, makeObservable, observable, runInAction } from 'mobx';
 import { persist } from 'mobx-persist';
-import moment from 'moment';
-import { from, of } from 'rxjs';
-import { catchError, concatMap, delay, map, switchMap } from 'rxjs/operators';
+import { of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { rootStore } from '../..';
 import { ICharacter } from '../../interfaces/character.interface';
 import { IStash, IStashTab } from '../../interfaces/stash.interface';
@@ -41,7 +40,7 @@ export class AccountLeague {
   }
 
   @action
-  getStashTabs(checkHeaders?: boolean) {
+  getStashTabs() {
     return externalService.getStashTabs(this.leagueId).pipe(
       map((response: AxiosResponse<IStash>) => {
         runInAction(() => {
@@ -50,43 +49,6 @@ export class AccountLeague {
           }
           this.getStashTabsSuccess();
         });
-      }),
-      switchMap(() => {
-        const selectedStashTabs = this.stashtabList.filter(
-          (st) =>
-            rootStore.accountStore.getSelectedAccount.activeProfile?.activeStashTabIds.find(
-              (ast) => ast === st.id
-            ) !== undefined
-        );
-        // fetch first and set headers
-        if (selectedStashTabs.length > 0 && checkHeaders) {
-          const limits = rootStore.rateLimitStore.lastRateLimitBoundaries;
-          const state = rootStore.rateLimitStore.lastRateLimitState;
-          let delayTime: number = 0;
-          if (limits && state) {
-            const fiveMinutesAgo = moment().utc().subtract(5, 'minutes');
-            const requestRecently = moment(rootStore.rateLimitStore.lastRequestTimestamp)
-              .utc()
-              .isAfter(fiveMinutesAgo);
-            const innerTokensLeft = limits?.inner.tokens - state?.inner.tokens < 3;
-            const outerTokensLeft = limits?.outer.tokens - state?.outer.tokens < 3;
-            const shouldDelay = requestRecently && (innerTokensLeft || outerTokensLeft);
-            const duration = moment.duration(
-              moment(rootStore.rateLimitStore.lastRequestTimestamp).diff(fiveMinutesAgo)
-            );
-            if (shouldDelay) {
-              delayTime = duration.asMilliseconds();
-            }
-          }
-          const source = from([selectedStashTabs[0]]).pipe(
-            delay(delayTime),
-            concatMap((tab: IStashTab) =>
-              externalService.getStashTabWithChildren(tab, this.leagueId, false, true)
-            )
-          );
-          return source;
-        }
-        return of(undefined);
       }),
       catchError((e: AxiosError) => {
         of(this.getStashTabsFail(e));
