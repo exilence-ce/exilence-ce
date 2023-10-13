@@ -10,6 +10,8 @@
     "pricing_items": "Pricing items",
     "saving_snapshot": "Saving snapshot",
     "refreshing_stash_tabs": "Refreshing stash tabs",
-    "fetching_prices": "Fetching new prices"
+    "fetching_prices": "Fetching new prices",
+    "estimated_time": "Estimated time:",
+    "estimated_time_next_snapshot": "Next snapshot without waiting time in:"
   }
 }

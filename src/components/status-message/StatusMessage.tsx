@@ -5,14 +5,23 @@ import { observer } from 'mobx-react-lite';
 import InfoIcon from '@mui/icons-material/Info';
 import { IStatusMessage } from '../../interfaces/status-message.interface';
 import useStyles from './StatusMessage.styles';
+import StableCountdownTimer from '../countdown-timer/StableCountdownTimer';
 
 type StatusMessageProps = {
   statusMessage?: IStatusMessage;
   infoLabel?: string;
   isSnapshotting?: boolean;
+  estimatedSnapshotTime: number;
+  isNextSnapshotWithoutWaitTimeMsg?: boolean;
 };
 
-const StatusMessage = ({ statusMessage, infoLabel, isSnapshotting }: StatusMessageProps) => {
+const StatusMessage = ({
+  statusMessage,
+  infoLabel,
+  isSnapshotting,
+  estimatedSnapshotTime,
+  isNextSnapshotWithoutWaitTimeMsg,
+}: StatusMessageProps) => {
   const { t } = useTranslation();
   const classes = useStyles();
 
@@ -20,25 +29,33 @@ const StatusMessage = ({ statusMessage, infoLabel, isSnapshotting }: StatusMessa
     <>
       {statusMessage && (
         <Stack spacing={1} direction="row" alignItems="center">
-          <Typography variant="body2">
-            {t(`status:message.${statusMessage.message}`, { param: statusMessage?.translateParam })}{' '}
-            {statusMessage.currentCount && statusMessage.totalCount && (
-              <>
-                {statusMessage.currentCount} / {statusMessage.totalCount}
-              </>
-            )}{' '}
-            ...{' '}
-            {statusMessage.estimatedTime !== undefined &&
-            statusMessage.estimatedTimeTotal !== undefined
-              ? `Estimated Time: ${statusMessage.estimatedTime} / ${statusMessage.estimatedTimeTotal}`
-              : (statusMessage.estimatedTime !== undefined && statusMessage.estimatedTimeTotal) ||
-                undefined
-              ? `Estimated Time: ${Math.max(
-                  statusMessage.estimatedTime || 0,
-                  statusMessage.estimatedTimeTotal || 0
-                )}`
-              : ''}
-          </Typography>
+          {isNextSnapshotWithoutWaitTimeMsg ? (
+            <>
+              <Typography variant="body2">
+                {`${t(`status:message.${statusMessage.message}`)} `}
+              </Typography>
+              <StableCountdownTimer comparison={estimatedSnapshotTime} />
+            </>
+          ) : (
+            <Typography variant="body2">
+              {`${t(`status:message.${statusMessage.message}`, {
+                param: statusMessage?.translateParam,
+              })} `}
+              {statusMessage.currentCount && statusMessage.totalCount && (
+                <>
+                  {statusMessage.currentCount} / {statusMessage.totalCount}
+                </>
+              )}
+              {' ...'}
+            </Typography>
+          )}
+          {isSnapshotting && (
+            <>
+              <Typography variant="body2">{` ${t('status:message.estimated_time')} `}</Typography>
+              <StableCountdownTimer comparison={estimatedSnapshotTime} />
+              {` `}
+            </>
+          )}
           {infoLabel && isSnapshotting && (
             <Tooltip title={infoLabel || ''} placement="bottom">
               <InfoIcon classes={{ root: classes.iconRoot }} />

@@ -151,6 +151,14 @@ const renderApp = () => {
   ])
     .then(() => {
       rootStore.settingStore.setUiScale(rootStore.settingStore.uiScale);
+      // Restore handle or remove retryAfter
+      if (rootStore.rateLimitStore.retryAfter > 0) {
+        const seconds = Math.floor(
+          moment.utc(rootStore.rateLimitStore.retryAfter).diff(moment.utc()) / 1000
+        );
+        rootStore.rateLimitStore.setRetryAfter(seconds > 0 ? seconds : 0);
+      }
+      // Restore rateLimiter state handler
       rootStore.rateLimitStore.limiters.forEach((pls) => pls.forEach((rl) => rl.restore()));
       visitor = ua(AppConfig.trackingId, rootStore.uiStateStore.userId);
       ReactDOM.render(<App />, document.getElementById('root'));

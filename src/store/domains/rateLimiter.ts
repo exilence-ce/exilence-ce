@@ -7,7 +7,7 @@ import moment from 'moment';
 
 const DEBUG = true;
 
-class ResourceHandle {
+export class ResourceHandle {
   @persist borrowedAt!: number;
   @persist releasedAt!: number;
   public promise!: Promise<void>;
@@ -38,14 +38,10 @@ class ResourceHandle {
     return Boolean(this._tmid && this.promise && this._cb && this._resolve && this._reject);
   }
 
-  public destroy(reason?: any) {
+  public cancel(reason?: any) {
     clearTimeout(this._tmid);
     this._cb();
     this._reject(reason);
-  }
-
-  public cancel() {
-    clearTimeout(this._tmid);
   }
 
   // In case of retry-after
@@ -227,7 +223,7 @@ export class RateLimiter {
 
     let simulation: Array<{ max: number; window: number; stack: number[] }>;
     {
-      const now = Date.now();
+      const now = moment.utc().valueOf();
       simulation = Array.from(limiters).map((l) => ({
         max: l.max,
         window: l.window,
@@ -279,7 +275,7 @@ export class RateLimiter {
     this._destroyed = true;
     if (this.queue.value) {
       // shortcircuit awaiters in queue
-      this.stack[0].destroy(new Error('RateLimiter is no longer active'));
+      this.stack[0].cancel(new Error('RateLimiter is no longer active'));
     }
   }
 

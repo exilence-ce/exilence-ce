@@ -44,6 +44,7 @@ type ToolbarProps = {
   changingProfile: boolean;
   hasPrices?: boolean;
   retryAfter: number;
+  showNextSnapshotWithoutWaitTime: boolean;
   statusMessage?: IStatusMessage;
   toggleAutosnapshot: () => void;
   toggleSidenav: () => void;
@@ -84,6 +85,7 @@ const Toolbar = ({
   changingProfile,
   statusMessage,
   retryAfter,
+  showNextSnapshotWithoutWaitTime,
   toggleGroupOverview,
   toggleSessionNetWorth,
   handleSessionStart,
@@ -105,6 +107,9 @@ const Toolbar = ({
 
   const fetchingPricesMsg: IStatusMessage = {
     message: 'fetching_prices',
+  };
+  const nextSnapshotWithoutWaitTimeMsg: IStatusMessage = {
+    message: 'estimated_time_next_snapshot',
   };
 
   return (
@@ -177,6 +182,16 @@ const Toolbar = ({
               {!statusMessage && isUpdatingPrices && (
                 <StatusMessageContainer overrideMessage={fetchingPricesMsg} />
               )}
+              {!statusMessage &&
+                !isUpdatingPrices &&
+                !isSnapshotting &&
+                !isInitiating &&
+                showNextSnapshotWithoutWaitTime && (
+                  <StatusMessageContainer
+                    overrideMessage={nextSnapshotWithoutWaitTimeMsg}
+                    isNextSnapshotWithoutWaitTimeMsg
+                  />
+                )}
             </Box>
           )}
           <Grid

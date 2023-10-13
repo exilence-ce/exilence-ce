@@ -3,6 +3,4 @@ export interface IStatusMessage {
   translateParam?: string | number;
   currentCount?: number;
   totalCount?: number;
-  estimatedTime?: number;
-  estimatedTimeTotal?: number;
 }

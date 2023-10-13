@@ -63,6 +63,8 @@ export class Profile {
   @persist @observable activeCharacterName: string = '';
 
   @persist('list') @observable activeStashTabIds: string[] = [];
+  @persist @observable lastFoundActiveStashTabIds: number | undefined;
+  @persist @observable lastFoundActiveSubStashTabIds: number | undefined;
 
   @persist('list', Snapshot) @observable snapshots: Snapshot[] = [];
 
@@ -501,14 +503,7 @@ export class Profile {
       return this.getItemsFail(new Error('no_matching_league'), this.activeLeagueId);
     }
 
-    const selectedStashTabs = accountLeague.stashtabList.filter(
-      (st) => this.activeStashTabIds.find((ast) => ast === st.id) !== undefined
-    );
-
-    rootStore.uiStateStore.setStatusMessage(
-      'refreshing_stash_tabs',
-      rootStore.rateLimitStore.getEstimatedSnapshotTime(selectedStashTabs.length)
-    );
+    rootStore.uiStateStore.setStatusMessage('refreshing_stash_tabs');
 
     fromStream(
       accountLeague.getStashTabs().pipe(
@@ -555,6 +550,7 @@ export class Profile {
     const selectedStashTabs = accountLeague.stashtabList.filter(
       (st) => this.activeStashTabIds.find((ast) => ast === st.id) !== undefined
     );
+    this.lastFoundActiveStashTabIds = selectedStashTabs.length;
 
     if (selectedStashTabs.length === 0) {
       return this.getItemsFail(
@@ -578,20 +574,21 @@ export class Profile {
       selectedStashTabs.length
     );
     fromStream(
-      forkJoin(
+      forkJoin([
         getMainTabsWithChildren,
         this.activeCharacterName &&
-          this.activeCharacterName !== '' &&
-          this.activeCharacterName !== 'None'
+        this.activeCharacterName !== '' &&
+        this.activeCharacterName !== 'None'
           ? externalService.getCharacter(this.activeCharacterName)
-          : of(null)
-      ).pipe(
+          : of(null),
+      ]).pipe(
         switchMap((response) => {
           const combinedTabs = response[0];
           const subTabs = combinedTabs
             .filter((sst) => sst.children)
             .flatMap((sst) => sst.children ?? sst);
           // if no subtabs exist, simply return the original request
+          runInAction(() => (this.lastFoundActiveSubStashTabIds = subTabs.length));
           if (subTabs.length === 0) {
             response[0] = combinedTabs;
             return of(response);

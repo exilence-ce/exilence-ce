@@ -65,6 +65,9 @@ function getStashTabWithChildren(tab: IStashTab, league: string, children?: bool
       const id = `${prefix}${tab.id}`;
       return axios.get<IStashTabResponse>(`${apiUrl}/stash/${league}/${id}`).pipe(
         map((stashTab) => {
+          if (!children) {
+            rootStore.uiStateStore.incrementStatusMessageCount();
+          }
           RateLimitStore.adjustRateLimits(rootStore.rateLimitStore.stashLimit, stashTab.headers);
           return stashTab.data.stash;
         })

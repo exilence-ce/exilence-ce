@@ -1,8 +1,11 @@
-import { action, makeObservable, observable } from 'mobx';
+/* eslint-disable no-fallthrough */
+import { action, computed, makeObservable, observable } from 'mobx';
 import { persist } from 'mobx-persist';
 import moment from 'moment';
-import { RateLimiter } from './domains/rateLimiter';
+import { RateLimiter, ResourceHandle } from './domains/rateLimiter';
 import { RootStore } from './rootStore';
+
+const DEBUG = true;
 
 export class RateLimitStore {
   @observable @persist('list', RateLimiter) stashLimit = [
@@ -23,6 +26,7 @@ export class RateLimitStore {
   ];
 
   @observable @persist retryAfter = 0;
+  retryAfterHandle: ResourceHandle | undefined;
 
   constructor(private rootStore: RootStore) {
     makeObservable(this);
@@ -42,30 +46,72 @@ export class RateLimitStore {
     return [this.stashLimit, this.stashListLimit, this.characterLimit];
   }
 
-  // @computed
-  // get retrySnapshotAfter() {
-  //   const now = moment();
-  //   const maxRetryAfter = this.snapshotLimiters
-  //     .filter((limiter) => limiter.retryAfter !== 0)
-  //     .map((limiter) => moment(limiter.retryAfter).diff(now));
-  //   return Math.max(0, ...maxRetryAfter);
-  // }
-
   @action
   setRetryAfter(seconds: number) {
-    this.retryAfter = seconds === 0 ? 0 : moment().add(seconds, 'seconds').valueOf();
+    this.retryAfter = seconds === 0 ? 0 : moment.utc().add(seconds, 'seconds').valueOf();
+    if (seconds > 0) {
+      this.retryAfterHandle?.cancel();
+      this.retryAfterHandle = new ResourceHandle(seconds * 1000, () => {
+        this.retryAfterHandle = undefined;
+        this.setRetryAfter(0);
+      });
+    }
   }
 
-  @action
-  getEstimatedSnapshotTime(stashTabsToRequests: number) {
-    // TODO: Calculate 1 request in advance - and stashTabsToRequests in advance
-    const stashListTime = RateLimiter.estimateTime(1, this.stashListLimit);
-    const characterTime = RateLimiter.estimateTime(1, this.characterLimit);
-    let stashTime = 0;
-    if (stashTabsToRequests > 0) {
-      stashTime = RateLimiter.estimateTime(stashTabsToRequests, this.stashLimit);
+  @computed
+  get estimatedSnapshotTime() {
+    const profile = this.rootStore.accountStore.getSelectedAccount.activeProfile;
+    if (!profile) return 0;
+
+    const latency = 320;
+    const activeStashTabs = profile.activeStashTabIds.length;
+    let expectedStashTabRequests = activeStashTabs;
+    if (
+      profile.lastFoundActiveStashTabIds !== undefined &&
+      profile.lastFoundActiveStashTabIds < activeStashTabs
+    ) {
+      expectedStashTabRequests = profile.lastFoundActiveStashTabIds;
     }
-    return stashListTime + characterTime + stashTime;
+    let expectedSubStashTabRequests = 0;
+    if (profile.lastFoundActiveSubStashTabIds !== undefined) {
+      expectedSubStashTabRequests = profile.lastFoundActiveSubStashTabIds;
+    }
+
+    DEBUG && console.log(`Calc snapshot time: Snapshotting: ${this.rootStore.uiStateStore.isSnapshotting} <activeStashTabs=${activeStashTabs},lastParent=${expectedStashTabRequests},lastSub=${expectedSubStashTabRequests}>`;);
+
+    let total = 0;
+    if (this.rootStore.uiStateStore.isSnapshotting) {
+      // Calc the current estimated snapshot time
+      switch (this.rootStore.uiStateStore.statusMessage?.message) {
+        case 'refreshing_stash_tabs':
+          total = RateLimiter.estimateTime(1, this.stashListLimit);
+          total += latency;
+        case 'fetching_stash_tab':
+          // Fetching character & parent stashtabs
+          total += RateLimiter.estimateTime(1, this.characterLimit);
+          total += RateLimiter.estimateTime(expectedStashTabRequests, this.stashLimit);
+          total += latency * (1 + expectedStashTabRequests);
+        case 'fetching_subtabs':
+          // Fetching substashtabs
+          total += RateLimiter.estimateTime(expectedSubStashTabRequests, this.stashLimit);
+          total += latency * expectedSubStashTabRequests;
+        case 'pricing_items':
+        case 'saving_snapshot':
+          total += latency * 0.5; // Backend
+          break;
+        default:
+          break;
+      }
+    } else {
+      // Calc when snapshot is ready without waittime
+      total = RateLimiter.estimateTime(1, this.stashListLimit);
+      total += RateLimiter.estimateTime(1, this.characterLimit);
+      total += RateLimiter.estimateTime(expectedStashTabRequests, this.stashLimit);
+      total += RateLimiter.estimateTime(expectedSubStashTabRequests, this.stashLimit);
+    }
+    DEBUG && console.info(`EstimatedSnapshotTime ${total / 1000} s`);
+    if (total === 0) return 0;
+    return moment.utc().add(total, 'milliseconds').valueOf();
   }
 
   static async waitMulti(limiters: Iterable<RateLimiter>): Promise<void> {
@@ -101,7 +147,8 @@ export class RateLimitStore {
       rules.map((rule) => headers[`x-rate-limit-${rule}`]!).join(','),
       rules.map((rule) => headers[`x-rate-limit-${rule}-state`]!).join(','),
       retryAfter
-        ? moment()
+        ? moment
+            .utc()
             .add(+retryAfter, 'seconds')
             .valueOf()
         : 0
@@ -115,7 +162,6 @@ export class RateLimitStore {
     retryAfter: number
   ): void {
     /* eslint-disable no-console */
-    const DEBUG = true;
     const DESYNC_FIX = 0.05; // apiLatencySeconds
 
     const limitRuleState = stateStr

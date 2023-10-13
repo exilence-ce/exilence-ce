@@ -7,10 +7,14 @@ import StatusMessage from './StatusMessage';
 
 type StatusMessageContainerProps = {
   overrideMessage?: IStatusMessage;
+  isNextSnapshotWithoutWaitTimeMsg?: boolean;
 };
 
-const StatusMessageContainer = ({ overrideMessage }: StatusMessageContainerProps) => {
-  const { uiStateStore } = useStores();
+const StatusMessageContainer = ({
+  overrideMessage,
+  isNextSnapshotWithoutWaitTimeMsg,
+}: StatusMessageContainerProps) => {
+  const { uiStateStore, rateLimitStore } = useStores();
   const { t } = useTranslation();
 
   return (
@@ -18,6 +22,8 @@ const StatusMessageContainer = ({ overrideMessage }: StatusMessageContainerProps
       statusMessage={overrideMessage || uiStateStore!.statusMessage}
       isSnapshotting={uiStateStore.isSnapshotting}
       infoLabel={uiStateStore.isSnapshotting ? t('label.snapshotting_info_icon') : undefined}
+      estimatedSnapshotTime={rateLimitStore.estimatedSnapshotTime}
+      isNextSnapshotWithoutWaitTimeMsg={isNextSnapshotWithoutWaitTimeMsg}
     />
   );
 };
