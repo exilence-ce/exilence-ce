@@ -215,7 +215,38 @@ export class RateLimiter {
     }
   }
 
-  static estimateTime(count: number, limiters: Iterable<RateLimiter>, ignoreState = false): number {
+  static limiterWaitInfo(
+    requests: number,
+    limiters: RateLimiter[],
+    ignoreRequestOverflow = false,
+    ignoreState = false
+  ) {
+    const maxLimiter = limiters.slice().sort((a, b) => b.max - a.max)[0];
+    const estimatedTime = this.estimateTime(
+      requests,
+      [maxLimiter],
+      ignoreState,
+      ignoreRequestOverflow
+    );
+    const staticEstimatedTime = ignoreRequestOverflow
+      ? 0
+      : this.estimateStaticTime(requests, limiters);
+    return { estimatedTime, staticEstimatedTime };
+  }
+
+  static estimateStaticTime(requests: number, limiters: RateLimiter[]) {
+    const maxRequests = limiters.map((x) => x.max).sort((a, b) => b - a)[0] || 0;
+    const requestOverflow = requests - maxRequests > 0;
+    if (!requestOverflow) return 0;
+    return this.estimateTime(requests, limiters, true, true);
+  }
+
+  static estimateTime(
+    requests: number,
+    limiters: Iterable<RateLimiter>,
+    ignoreRequestOverflow = false,
+    ignoreState = false
+  ): number {
     // NOTE: Cannot handle existing queue in simulation, because
     //       entries in queue can depend on other limiters in `waitMulti` call.
     //       It means that time returned by `estimateTime` will be increased
@@ -224,17 +255,24 @@ export class RateLimiter {
     let simulation: Array<{ max: number; window: number; stack: number[] }>;
     {
       const now = moment.utc().valueOf();
-      simulation = Array.from(limiters).map((l) => ({
-        max: l.max,
-        window: l.window,
-        stack: ignoreState
-          ? []
-          : l.stack.map((entry) => entry.releasedAt - now).sort((a, b) => a - b),
-      }));
+      simulation = Array.from(limiters)
+        .slice()
+        .sort((a, b) => a.max - b.max)
+        .map((l) => ({
+          max: l.max,
+          window: l.window,
+          stack: ignoreState
+            ? []
+            : l.stack.map((entry) => entry.releasedAt - now).sort((a, b) => a - b),
+        }));
+      const maxRequests = simulation.map((limit) => limit.max).sort((a, b) => b - a)[0] || 0;
+      if (!ignoreRequestOverflow && requests > maxRequests) {
+        requests = requests % maxRequests;
+      }
     }
 
     let total = 0;
-    while (count--) {
+    while (requests--) {
       while (simulation.some((limit) => limit.stack.length >= limit.max)) {
         const waitTime = simulation.reduce(
           (ms, limit) =>

@@ -115,6 +115,9 @@ export class UiStateStore {
   @observable netWorthSessionHistoryChartMode: HistoryChartSeriesMode = 'netWorth';
   @observable netWorthSessionIncomeMode: NetWorthSessionIncomeMode = 'sessionDuration';
 
+  // Not observable! Important for time calculation
+  currentRequest: number | undefined;
+
   @observable cancelSnapshot: Subject<boolean> = new Subject();
 
   constructor(private rootStore: RootStore) {
@@ -215,6 +218,7 @@ export class UiStateStore {
       currentCount: currentCount,
       totalCount: totalCount,
     };
+    this.currentRequest = 0;
 
     this.statusMessage = { ...statusMessage };
   }

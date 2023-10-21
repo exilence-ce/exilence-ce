@@ -162,7 +162,9 @@ const Toolbar = ({
                 <Typography variant="caption">
                   {t('label.rate_limit_exceeded_prefix')}:&nbsp;
                 </Typography>
-                <CountdownTimer comparison={retryAfter} />
+                <Typography variant="caption">
+                  {<CountdownTimer comparison={retryAfter} />}
+                </Typography>
               </Box>
             </>
           )}

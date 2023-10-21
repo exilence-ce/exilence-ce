@@ -185,7 +185,9 @@ const ToolbarContainer = () => {
         statusMessage={uiStateStore!.statusMessage}
         retryAfter={rateLimitStore.retryAfter}
         showNextSnapshotWithoutWaitTime={
-          !uiStateStore.isSnapshotting ? Boolean(rateLimitStore.estimatedSnapshotTime) : false
+          !uiStateStore.isSnapshotting
+            ? Boolean(rateLimitStore.estimatedSnapshotTime.estimated)
+            : false
         }
         profileOpen={profileOpen}
         toggleSessionNetWorth={() => uiStateStore!.toggleNetWorthSession()}

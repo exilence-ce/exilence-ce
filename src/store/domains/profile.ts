@@ -63,6 +63,7 @@ export class Profile {
   @persist @observable activeCharacterName: string = '';
 
   @persist('list') @observable activeStashTabIds: string[] = [];
+
   @persist @observable lastFoundActiveStashTabIds: number | undefined;
   @persist @observable lastFoundActiveSubStashTabIds: number | undefined;
 
@@ -84,6 +85,9 @@ export class Profile {
     // Prevent memory leaks for temp profils or sessions
     if (disposeSession) this.session.dispose();
     if (currentProfile) {
+      // TODO: Save to backend
+      this.lastFoundActiveStashTabIds = currentProfile.lastFoundActiveStashTabIds;
+      this.lastFoundActiveSubStashTabIds = currentProfile.lastFoundActiveSubStashTabIds;
       this.snapshots = currentProfile.snapshots;
       this.session = currentProfile.session;
       this.session.setProfileId(this.uuid);
@@ -588,12 +592,14 @@ export class Profile {
             .filter((sst) => sst.children)
             .flatMap((sst) => sst.children ?? sst);
           // if no subtabs exist, simply return the original request
-          runInAction(() => (this.lastFoundActiveSubStashTabIds = subTabs.length));
+          runInAction(() => {
+            this.lastFoundActiveSubStashTabIds = subTabs.length;
+          });
           if (subTabs.length === 0) {
             response[0] = combinedTabs;
             return of(response);
           }
-          rootStore.uiStateStore.setStatusMessage('fetching_subtabs');
+          rootStore.uiStateStore.setStatusMessage('fetching_subtabs', undefined, 1, subTabs.length);
           const getItemsForSubTabsSource = from(subTabs).pipe(
             concatMap((tab: IStashTab) =>
               externalService.getStashTabWithChildren(tab, league.id, true)

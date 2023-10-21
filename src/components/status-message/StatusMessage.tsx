@@ -5,13 +5,18 @@ import { observer } from 'mobx-react-lite';
 import InfoIcon from '@mui/icons-material/Info';
 import { IStatusMessage } from '../../interfaces/status-message.interface';
 import useStyles from './StatusMessage.styles';
-import StableCountdownTimer from '../countdown-timer/StableCountdownTimer';
+import moment from 'moment';
+import { rootStore } from '../..';
+import CountdownTimer from '../countdown-timer/CountdownTimer';
 
 type StatusMessageProps = {
   statusMessage?: IStatusMessage;
   infoLabel?: string;
   isSnapshotting?: boolean;
-  estimatedSnapshotTime: number;
+  estimatedSnapshotTime: {
+    estimated: number;
+    estimatedStatic?: moment.Duration;
+  };
   isNextSnapshotWithoutWaitTimeMsg?: boolean;
 };
 
@@ -33,8 +38,13 @@ const StatusMessage = ({
             <>
               <Typography variant="body2">
                 {`${t(`status:message.${statusMessage.message}`)} `}
+                <CountdownTimer
+                  comparison={estimatedSnapshotTime.estimated}
+                  timeOverCb={() => {
+                    rootStore.rateLimitStore.setEstimatedSnapshotTime();
+                  }}
+                />
               </Typography>
-              <StableCountdownTimer comparison={estimatedSnapshotTime} />
             </>
           ) : (
             <Typography variant="body2">
@@ -51,8 +61,11 @@ const StatusMessage = ({
           )}
           {isSnapshotting && (
             <>
-              <Typography variant="body2">{` ${t('status:message.estimated_time')} `}</Typography>
-              <StableCountdownTimer comparison={estimatedSnapshotTime} />
+              <Typography variant="body2">
+                {` ${t('status:message.estimated_time')} `}
+                <CountdownTimer comparison={estimatedSnapshotTime.estimated} />
+              </Typography>
+
               {` `}
             </>
           )}
