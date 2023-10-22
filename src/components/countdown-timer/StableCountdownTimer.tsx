@@ -17,12 +17,11 @@ const StableCountdownTimer = ({ comparison, timeOverCb }: StableCountdownTimerPr
     let timeLeft = 0;
 
     if (difference > 0) {
-      timeLeft = Math.floor(difference / 1000);
+      timeLeft = Math.round(difference / 1000);
     } else {
       timeOverCb?.();
     }
 
-    console.log('EstimatedSnapshotTime - SetTime: ' + timeLeft);
     return moment.duration(timeLeft, 'seconds').format('m [minutes], s [seconds]');
   }, []);
 

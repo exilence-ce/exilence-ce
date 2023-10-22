@@ -9,13 +9,13 @@ type CountdownTimerProps = {
 };
 
 const CountdownTimer = ({ comparison, timeOverCb }: CountdownTimerProps) => {
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout[]>([]);
   const calculateTimeLeft = () => {
     const difference = moment.utc(comparison).diff(moment.utc());
     let timeLeft = 0;
 
     if (difference > 0) {
-      timeLeft = Math.floor(difference / 1000);
+      timeLeft = Math.round(difference / 1000);
     } else {
       timeOverCb?.();
     }
@@ -26,16 +26,22 @@ const CountdownTimer = ({ comparison, timeOverCb }: CountdownTimerProps) => {
   const [timeLeft, setTimeLeft] = useState(() => calculateTimeLeft());
 
   useEffect(() => {
-    timeoutRef.current = setTimeout(() => {
+    const timeout = setTimeout(() => {
+      const index = timeoutRef.current.indexOf(timeout);
+      if (index > -1) {
+        timeoutRef.current.splice(index, 1);
+      }
       setTimeLeft(calculateTimeLeft());
     }, 1000);
+    timeoutRef.current.push(timeout);
   });
 
-  useEffect(() => {
-    return () => {
-      timeoutRef.current && clearTimeout(timeoutRef.current);
-    };
-  }, []);
+  useEffect(
+    () => () => {
+      timeoutRef.current.forEach((timeout) => clearTimeout(timeout));
+    },
+    []
+  );
 
   return <>{timeLeft}</>;
 };

@@ -761,6 +761,7 @@ export class Profile {
   @action
   saveSnapshot(pricedStashTabs: IStashTabSnapshot[]) {
     rootStore.uiStateStore.setStatusMessage('saving_snapshot');
+    rootStore.rateLimitStore.setEstimatedSnapshotTime();
     const snapshot: ISnapshot = {
       stashTabSnapshots: pricedStashTabs.map((p) => new StashTabSnapshot(p)),
     };

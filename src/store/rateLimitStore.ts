@@ -13,6 +13,15 @@ interface IEstimatedTime {
   estimatedStatic?: moment.Duration;
 }
 
+interface ITimeEstimation {
+  measuredTime: number[];
+  estimatedTime: number[][];
+  measuredLatencys: number[];
+  estimatedLatencys: number[][];
+  totalEstimatedTime: number[][];
+  totalEstimatedLatencys: number[][];
+}
+
 export class RateLimitStore {
   @observable @persist('list', RateLimiter) stashLimit = [
     new RateLimiter('stash-request-limit', 1, 5),
@@ -31,17 +40,20 @@ export class RateLimitStore {
     new RateLimiter('ladder-view', 1, 5),
   ];
 
+  timeEstimation?: ITimeEstimation;
+  snapshotTimeStart = 0;
+  totalEstimatedTime = 0;
+
   stashLatencyTimer?: StashLatencyTimer;
   @persist('object') snapshotLatencyList = {
     'stash-request-limit': 300,
     'stash-list-request-limit': 300,
-    'character-request-limit': 600,
+    // 'character-request-limit': 600,
     'push-snapshot': 100, // Backend
   };
 
   @observable @persist retryAfter = 0;
   retryAfterHandle?: ResourceHandle;
-  estimatedSnapshotTimeHandle?: ResourceHandle;
   @observable estimatedSnapshotTime: IEstimatedTime = {
     estimated: 0,
     estimatedStatic: undefined,
@@ -60,7 +72,9 @@ export class RateLimitStore {
         console.log(
           `Autoreact triggered: setEstimatedSnapshotTime -> <isSnapshotting=${this.rootStore.uiStateStore.isSnapshotting}>`
         );
+      // Tigger on isSnapshotting
       this.rootStore.uiStateStore.isSnapshotting;
+      // The action to be triggered
       this.setEstimatedSnapshotTime();
     });
   }
@@ -118,50 +132,151 @@ export class RateLimitStore {
     }
 
     let totalTime = 0;
-    let staticTime = 0;
+    let totalStaticTime = 0;
+    let totalLatency = 0;
+    let time = 0;
     let latency = 0;
+    let openRequests = 0;
     if (this.rootStore.uiStateStore.isSnapshotting) {
       // Calc the current estimated snapshot time
       switch (this.rootStore.uiStateStore.statusMessage?.message) {
         case 'refreshing_stash_tabs':
-          totalTime = RateLimiter.estimateTime(1, this.stashListLimit, true);
-          latency += this.snapshotLatencyList['stash-list-request-limit'];
+          time = RateLimiter.estimateTime(1, this.stashListLimit, true);
+          latency = this.snapshotLatencyList['stash-list-request-limit'];
+          time -= latency;
+          if (time < 0) time = 0;
+          totalTime += time;
+          totalLatency += latency;
+
+          if (DEBUG) {
+            openRequests += 1;
+            this.timeEstimation = {
+              measuredTime: [],
+              estimatedTime: [[openRequests, time]],
+              measuredLatencys: [],
+              estimatedLatencys: [
+                [openRequests, latency, this.snapshotLatencyList['stash-list-request-limit']],
+              ],
+              totalEstimatedTime: [],
+              totalEstimatedLatencys: [],
+            };
+            this.snapshotTimeStart = moment.utc().valueOf();
+          }
+
         case 'fetching_stash_tab':
           // Fetching character & parent stashtabs - Character and Stashtabs are parallel requested, but at different amount of requests
           if (this.rootStore.uiStateStore.statusMessage?.message === 'fetching_stash_tab') {
-            const currentCount = this.rootStore.uiStateStore.currentRequest || 0; // Stack for calculation is already pushed. So already have 1 request less
+            const currentCount = this.rootStore.uiStateStore.currentRequest || 0;
             expectedStashTabRequests = expectedStashTabRequests - currentCount;
           }
           // We can safely ignore character fetching becasue stash-tabs is always > in time investment
           // ExpectedStashTabRequests shares the same RateLimiter and can cause waittime - but only in combination -> one simulution
-          totalTime += RateLimiter.estimateTime(
+          time = RateLimiter.estimateTime(
             expectedStashTabRequests + expectedSubStashTabRequests,
             this.stashLimit,
             true
           );
-          latency += this.snapshotLatencyList['stash-request-limit'] * expectedStashTabRequests;
+          latency =
+            this.snapshotLatencyList['stash-request-limit'] *
+            (expectedStashTabRequests + expectedSubStashTabRequests);
+          console.log(`<StashTime ${time} reduced by ${latency}`);
+          time -= latency;
+          if (time < 0) time = 0;
+          totalTime += time;
+          totalLatency += latency;
+
+          if (DEBUG) {
+            openRequests += expectedStashTabRequests + expectedSubStashTabRequests;
+            this.timeEstimation?.estimatedTime.push([
+              expectedStashTabRequests + expectedSubStashTabRequests,
+              time,
+            ]);
+            this.timeEstimation?.estimatedLatencys.push([
+              expectedStashTabRequests + expectedSubStashTabRequests,
+              latency,
+              this.snapshotLatencyList['stash-request-limit'],
+            ]);
+          }
         case 'fetching_subtabs':
           // Fetching substashtabs
           if (this.rootStore.uiStateStore.statusMessage?.message === 'fetching_subtabs') {
-            const currentCount = this.rootStore.uiStateStore.currentRequest || 0; // Stack for calculation is already pushed. So already have 1 request less
+            const currentCount = this.rootStore.uiStateStore.currentRequest || 0;
             expectedSubStashTabRequests = expectedSubStashTabRequests - currentCount;
             // This time is already included in fetching_stash_tab
-            totalTime += RateLimiter.estimateTime(
-              expectedSubStashTabRequests,
-              this.stashLimit,
-              true
-            );
+            time = RateLimiter.estimateTime(expectedSubStashTabRequests, this.stashLimit, true);
+            latency = this.snapshotLatencyList['stash-request-limit'] * expectedSubStashTabRequests;
+            time -= latency;
+            if (time < 0) time = 0;
+            totalTime += time;
+            totalLatency += latency;
+
+            if (DEBUG) {
+              openRequests += expectedSubStashTabRequests;
+              this.timeEstimation?.estimatedTime.push([expectedSubStashTabRequests, time]);
+              this.timeEstimation?.estimatedLatencys.push([
+                expectedSubStashTabRequests,
+                latency,
+                this.snapshotLatencyList['stash-request-limit'],
+              ]);
+            }
           }
-          // Requests fetching time is not included in fetching_stash_tab
-          latency += this.snapshotLatencyList['stash-request-limit'] * expectedSubStashTabRequests;
         case 'pricing_items':
-        case 'saving_snapshot':
-          latency += this.snapshotLatencyList['push-snapshot'] * 1;
+        case 'saving_snapshot': {
+          if (DEBUG) {
+            this.timeEstimation?.totalEstimatedTime.push([openRequests, totalTime]);
+            this.timeEstimation?.totalEstimatedLatencys.push([openRequests, totalLatency]);
+          }
+          totalLatency += this.snapshotLatencyList['push-snapshot'] * 1;
+          totalTime += totalLatency;
+
+          if (DEBUG && this.rootStore.uiStateStore.statusMessage?.message === 'saving_snapshot') {
+            const totalSnapshotTime = moment.utc().diff(this.snapshotTimeStart);
+            console.log(
+              `Total snapshot time was: ${totalSnapshotTime / 1000}s totalEstimation first time: ${
+                (this.timeEstimation!.totalEstimatedTime[0][1] +
+                  this.timeEstimation!.totalEstimatedLatencys[0][1]) /
+                1000
+              }s; Realdiff ${Math.abs(
+                totalSnapshotTime -
+                  (this.timeEstimation!.totalEstimatedTime[0][1] +
+                    this.timeEstimation!.totalEstimatedLatencys[0][1])
+              )}`
+            );
+
+            const totalMeasuredLatency = this.timeEstimation!.measuredLatencys.reduce(
+              (prev, val) => prev + val,
+              0
+            );
+            const totalMeasuredTime = this.timeEstimation!.measuredTime.reduce(
+              (prev, val) => prev + val,
+              0
+            );
+            const totalLatencyDiff = Math.abs(
+              totalMeasuredLatency - this.timeEstimation!.totalEstimatedLatencys[0][1]
+            );
+            const totalTimeDiff = Math.abs(
+              totalMeasuredTime - this.timeEstimation!.totalEstimatedTime[0][1]
+            );
+            console.log(
+              `<totalMeasuredLatency=${totalMeasuredLatency};totalEstimatedLatency(first)=${
+                this.timeEstimation!.totalEstimatedLatencys[0][1]
+              }> <totalMeasuredTime=${totalMeasuredTime};totalEstimatedTime=${
+                this.timeEstimation!.totalEstimatedTime[0][1]
+              }> <totalLatencyDiff=${totalLatencyDiff};totalTimeDiff=${totalTimeDiff};totalDiff=${
+                totalLatencyDiff + totalTimeDiff
+              }>`
+            );
+            console.log(this.timeEstimation);
+          }
           break;
+        }
         default:
           break;
       }
-      totalTime += latency;
+
+      // if (this.rootStore.uiStateStore.statusMessage?.message === 'refreshing_stash_tabs') {
+      //   this.totalEstimatedTime = totalTime;
+      // }
     } else {
       const stashListTimes = RateLimiter.limiterWaitInfo(1, this.stashListLimit);
       const characterTimes = RateLimiter.limiterWaitInfo(1, this.characterLimit);
@@ -179,7 +294,7 @@ export class RateLimitStore {
         stashTimes.estimatedTime
       );
       // Stashlist and Character does not have static time for 1 request
-      staticTime = stashTimes.staticEstimatedTime;
+      totalStaticTime = stashTimes.staticEstimatedTime;
     }
     DEBUG &&
       console.info(
@@ -188,23 +303,15 @@ export class RateLimitStore {
         }> ${
           this.rootStore.uiStateStore.isSnapshotting
         } <activeStashTabs=${activeStashTabs},stashRequests=${expectedStashTabRequests},subStashRequest=${expectedSubStashTabRequests}> <latency=${
-          latency / 1000
+          totalLatency / 1000
         },${this.snapshotLatencyList['stash-request-limit']}>`
       );
 
     this.estimatedSnapshotTime = {
       estimated: totalTime <= 0 ? 0 : moment.utc().add(totalTime, 'milliseconds').valueOf(),
-      estimatedStatic: staticTime <= 0 ? undefined : moment.duration(staticTime, 'milliseconds'),
+      estimatedStatic:
+        totalStaticTime <= 0 ? undefined : moment.duration(totalStaticTime, 'milliseconds'),
     };
-    // if (this.estimatedSnapshotTime.estimated !== 0) {
-    //   this.estimatedSnapshotTimeHandle?.cancel();
-    //   this.estimatedSnapshotTimeHandle = new ResourceHandle(totalTime, () => {
-    //     this.estimatedSnapshotTimeHandle = undefined;
-    //     DEBUG && console.log(`Recalculating: estimatedSnapshotTime`);
-    //     this.setEstimatedSnapshotTime();
-    //   });
-    //   this.estimatedSnapshotTimeHandle.promise.catch(() => {});
-    // }
   }
 
   static async waitMulti(limiters: Iterable<RateLimiter>): Promise<void> {

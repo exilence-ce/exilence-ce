@@ -5,7 +5,7 @@ import { action, computed, makeObservable, observable } from 'mobx';
 import { persist } from 'mobx-persist';
 import moment from 'moment';
 
-const DEBUG = true;
+const DEBUG = false;
 
 export class ResourceHandle {
   @persist borrowedAt!: number;

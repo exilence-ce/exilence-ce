@@ -24,14 +24,27 @@ export const externalService = {
   loginWithOAuth,
 };
 
-type latencyListKeys = keyof typeof rootStore.rateLimitStore.snapshotLatencyList;
+type LatencyListKeys = keyof typeof rootStore.rateLimitStore.snapshotLatencyList;
+export class GeneralTotalTimer {
+  start: moment.Moment;
+  constructor() {
+    this.start = moment.utc();
+  }
+  stopAndWrite(latency: number) {
+    const time = moment.utc().diff(this.start);
+    rootStore.rateLimitStore.timeEstimation?.measuredTime.push(time - latency);
+  }
+}
 export class GeneralLatencyTimer {
   start: moment.Moment;
-  constructor(public latencyName: latencyListKeys) {
+  constructor(public latencyName: LatencyListKeys) {
     this.start = moment.utc();
   }
   stopAndWrite() {
-    rootStore.rateLimitStore.snapshotLatencyList[this.latencyName] = moment.utc().diff(this.start);
+    const latency = moment.utc().diff(this.start);
+    rootStore.rateLimitStore.snapshotLatencyList[this.latencyName] = latency;
+    rootStore.rateLimitStore.timeEstimation?.measuredLatencys.push(latency);
+    return latency;
   }
 }
 export class StashLatencyTimer extends GeneralLatencyTimer {
@@ -48,11 +61,12 @@ export class StashLatencyTimer extends GeneralLatencyTimer {
     }
   }
   stopAndWrite() {
-    if ((rootStore.uiStateStore.currentRequest || 1) % 30 === this.latencyMeasureInterval) {
-      rootStore.rateLimitStore.snapshotLatencyList[this.latencyName] = moment
-        .utc()
-        .diff(this.start);
+    const latency = moment.utc().diff(this.start);
+    rootStore.rateLimitStore.timeEstimation?.measuredLatencys.push(latency);
+    if ((rootStore.uiStateStore.currentRequest || 0) % 30 === this.latencyMeasureInterval) {
+      rootStore.rateLimitStore.snapshotLatencyList[this.latencyName] = latency;
     }
+    return latency;
   }
   restart() {
     this.start = moment.utc();
@@ -73,13 +87,15 @@ function loginWithOAuth(code: string): Observable<AxiosResponse<any>> {
 /* #endregion */
 
 function getStashTabs(league: string): Observable<AxiosResponse<IStash>> {
+  const totalTimer = new GeneralTotalTimer();
   rootStore.rateLimitStore.setEstimatedSnapshotTime();
   return from(RateLimitStore.waitMulti(rootStore.rateLimitStore.stashListLimit)).pipe(
     concatMap(() => {
       const latencyTimer = new GeneralLatencyTimer('stash-list-request-limit');
       return axios.get<IStash>(`${apiUrl}/stash/${league}`).pipe(
         map((leagues) => {
-          latencyTimer.stopAndWrite();
+          const latency = latencyTimer.stopAndWrite();
+          totalTimer.stopAndWrite(latency);
           RateLimitStore.adjustRateLimits(rootStore.rateLimitStore.stashListLimit, leagues.headers);
           return leagues;
         })
@@ -90,7 +106,7 @@ function getStashTabs(league: string): Observable<AxiosResponse<IStash>> {
       if (err.response) {
         RateLimitStore.adjustRateLimits(
           rootStore.rateLimitStore.stashListLimit,
-          e.response?.headers
+          err.response.headers
         );
       }
       return throwError(e);
@@ -99,6 +115,7 @@ function getStashTabs(league: string): Observable<AxiosResponse<IStash>> {
 }
 
 function getStashTabWithChildren(tab: IStashTab, league: string, children?: boolean) {
+  const totalTimer = new GeneralTotalTimer();
   rootStore.rateLimitStore.setEstimatedSnapshotTime();
   return from(RateLimitStore.waitMulti(rootStore.rateLimitStore.stashLimit)).pipe(
     concatMap(() => {
@@ -118,7 +135,8 @@ function getStashTabWithChildren(tab: IStashTab, league: string, children?: bool
       return axios.get<IStashTabResponse>(`${apiUrl}/stash/${league}/${id}`).pipe(
         map((stashTab) => {
           rootStore.uiStateStore.incrementStatusMessageCount();
-          rootStore.rateLimitStore.stashLatencyTimer?.stopAndWrite();
+          const latency = rootStore.rateLimitStore.stashLatencyTimer?.stopAndWrite() || 0;
+          totalTimer.stopAndWrite(latency);
           RateLimitStore.adjustRateLimits(rootStore.rateLimitStore.stashLimit, stashTab.headers);
           return stashTab.data.stash;
         })
@@ -127,7 +145,7 @@ function getStashTabWithChildren(tab: IStashTab, league: string, children?: bool
     catchError((e: AxiosError) => {
       const err = e as AxiosError;
       if (err.response) {
-        RateLimitStore.adjustRateLimits(rootStore.rateLimitStore.stashLimit, e.response?.headers);
+        RateLimitStore.adjustRateLimits(rootStore.rateLimitStore.stashLimit, err.response.headers);
       }
       return throwError(e);
     })
@@ -155,7 +173,7 @@ function getLeagues(type: string = 'main', compact: number = 1, realm: string = 
       if (err.response) {
         RateLimitStore.adjustRateLimits(
           rootStore.rateLimitStore.ladderViewLimit,
-          e.response?.headers
+          err.response.headers
         );
       }
       return throwError(e);
@@ -164,7 +182,6 @@ function getLeagues(type: string = 'main', compact: number = 1, realm: string = 
 }
 
 function getCharacters() {
-  rootStore.rateLimitStore.setEstimatedSnapshotTime();
   return from(RateLimitStore.waitMulti(rootStore.rateLimitStore.characterListLimit)).pipe(
     concatMap(() => {
       return axios.get<ICharacterListResponse>(`${apiUrl}/character`).pipe(
@@ -180,7 +197,7 @@ function getCharacters() {
           if (err.response) {
             RateLimitStore.adjustRateLimits(
               rootStore.rateLimitStore.characterListLimit,
-              e.response?.headers
+              err.response.headers
             );
           }
           return throwError(e);
@@ -191,12 +208,14 @@ function getCharacters() {
 }
 
 function getCharacter(character: string) {
+  // const totalTimer = new GeneralTotalTimer();
   return from(RateLimitStore.waitMulti(rootStore.rateLimitStore.characterLimit)).pipe(
     concatMap(() => {
-      const latencyTimer = new GeneralLatencyTimer('character-request-limit');
+      // const latencyTimer = new GeneralLatencyTimer('character-request-limit');
       return axios.get<ICharacterResponse>(`${apiUrl}/character/${character}`).pipe(
         map((character) => {
-          latencyTimer?.stopAndWrite();
+          // const latency = latencyTimer.stopAndWrite();
+          // totalTimer.stopAndWrite(latency);
           RateLimitStore.adjustRateLimits(
             rootStore.rateLimitStore.characterLimit,
             character.headers
@@ -210,7 +229,7 @@ function getCharacter(character: string) {
       if (err.response) {
         RateLimitStore.adjustRateLimits(
           rootStore.rateLimitStore.characterLimit,
-          e.response?.headers
+          err.response.headers
         );
       }
       return throwError(e);

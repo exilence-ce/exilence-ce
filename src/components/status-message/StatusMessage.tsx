@@ -7,7 +7,7 @@ import { IStatusMessage } from '../../interfaces/status-message.interface';
 import useStyles from './StatusMessage.styles';
 import moment from 'moment';
 import { rootStore } from '../..';
-import CountdownTimer from '../countdown-timer/CountdownTimer';
+import StableCountdownTimer from '../countdown-timer/StableCountdownTimer';
 
 type StatusMessageProps = {
   statusMessage?: IStatusMessage;
@@ -38,7 +38,7 @@ const StatusMessage = ({
             <>
               <Typography variant="body2">
                 {`${t(`status:message.${statusMessage.message}`)} `}
-                <CountdownTimer
+                <StableCountdownTimer
                   comparison={estimatedSnapshotTime.estimated}
                   timeOverCb={() => {
                     rootStore.rateLimitStore.setEstimatedSnapshotTime();
@@ -63,7 +63,7 @@ const StatusMessage = ({
             <>
               <Typography variant="body2">
                 {` ${t('status:message.estimated_time')} `}
-                <CountdownTimer comparison={estimatedSnapshotTime.estimated} />
+                <StableCountdownTimer comparison={estimatedSnapshotTime.estimated} />
               </Typography>
 
               {` `}
