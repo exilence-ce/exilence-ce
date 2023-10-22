@@ -44,6 +44,10 @@ const StatusMessage = ({
                     rootStore.rateLimitStore.setEstimatedSnapshotTime();
                   }}
                 />
+                {estimatedSnapshotTime.estimatedStatic &&
+                  ` (+ ${estimatedSnapshotTime.estimatedStatic.format('m [minutes], s [seconds]', {
+                    trim: 'all',
+                  })})`}
               </Typography>
             </>
           ) : (

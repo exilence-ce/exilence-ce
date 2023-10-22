@@ -6,7 +6,7 @@ import { StashLatencyTimer } from '../services/external.service';
 import { RateLimiter, ResourceHandle } from './domains/rateLimiter';
 import { RootStore } from './rootStore';
 
-const DEBUG = true;
+const DEBUG = false;
 
 interface IEstimatedTime {
   estimated: number;
