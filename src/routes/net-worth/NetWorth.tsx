@@ -347,7 +347,13 @@ const NetWorth = () => {
                     <Box display="flex" justifyContent="center" alignItems="center">
                       <UpdateIcon fontSize="small" />
                       <Box ml={1}>
-                        <Typography variant="overline">{t('label.item_table')}</Typography>
+                        <Typography variant="overline">
+                          {activeProfile?.session.snapshotPreviewCreationDateTime
+                            ? t('label.item_table_preview', {
+                                dateTime: activeProfile.session.snapshotPreviewCreationDateTime,
+                              })
+                            : t('label.item_table')}
+                        </Typography>
                       </Box>
                     </Box>
                   </Grid>

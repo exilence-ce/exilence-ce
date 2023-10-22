@@ -788,6 +788,17 @@ export class Session {
   }
 
   @computed
+  get snapshotPreviewCreationDateTime() {
+    if (this.snapshotPreviewIndex !== -1) {
+      // %A, %e %b, %H:%M:%S.%L
+      return moment(this.snapshots[this.snapshotPreviewIndex].created).format(
+        'dddd[,] MMM D[,] HH:mm:ss:SSS'
+      );
+    }
+    return undefined;
+  }
+
+  @computed
   get isSnapshotPreviewVisible() {
     // Used in autorun
     let timestamp: moment.Moment | undefined;
