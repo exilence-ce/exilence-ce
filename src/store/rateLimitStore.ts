@@ -72,8 +72,10 @@ export class RateLimitStore {
         console.log(
           `Autoreact triggered: setEstimatedSnapshotTime -> <isSnapshotting=${this.rootStore.uiStateStore.isSnapshotting}>`
         );
-      // Tigger on isSnapshotting
+      // Trigger on isSnapshotting
       this.rootStore.uiStateStore.isSnapshotting;
+      // Trigger on profile change
+      this.rootStore.accountStore.getSelectedAccount.activeProfile;
       // The action to be triggered
       this.setEstimatedSnapshotTime();
     });
@@ -166,7 +168,7 @@ export class RateLimitStore {
         case 'fetching_stash_tab':
           // Fetching character & parent stashtabs - Character and Stashtabs are parallel requested, but at different amount of requests
           if (this.rootStore.uiStateStore.statusMessage?.message === 'fetching_stash_tab') {
-            const currentCount = this.rootStore.uiStateStore.currentRequest || 0;
+            const currentCount = (this.rootStore.uiStateStore.statusMessage.currentCount || 1) - 1;
             expectedStashTabRequests = expectedStashTabRequests - currentCount;
           }
           // We can safely ignore character fetching becasue stash-tabs is always > in time investment
@@ -179,7 +181,6 @@ export class RateLimitStore {
           latency =
             this.snapshotLatencyList['stash-request-limit'] *
             (expectedStashTabRequests + expectedSubStashTabRequests);
-          console.log(`<StashTime ${time} reduced by ${latency}`);
           time -= latency;
           if (time < 0) time = 0;
           totalTime += time;
@@ -200,7 +201,7 @@ export class RateLimitStore {
         case 'fetching_subtabs':
           // Fetching substashtabs
           if (this.rootStore.uiStateStore.statusMessage?.message === 'fetching_subtabs') {
-            const currentCount = this.rootStore.uiStateStore.currentRequest || 0;
+            const currentCount = (this.rootStore.uiStateStore.statusMessage.currentCount || 1) - 1;
             expectedSubStashTabRequests = expectedSubStashTabRequests - currentCount;
             // This time is already included in fetching_stash_tab
             time = RateLimiter.estimateTime(expectedSubStashTabRequests, this.stashLimit, true);

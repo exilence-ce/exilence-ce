@@ -63,7 +63,10 @@ export class StashLatencyTimer extends GeneralLatencyTimer {
   stopAndWrite() {
     const latency = moment.utc().diff(this.start);
     rootStore.rateLimitStore.timeEstimation?.measuredLatencys.push(latency);
-    if ((rootStore.uiStateStore.currentRequest || 0) % 30 === this.latencyMeasureInterval) {
+    if (
+      (rootStore.uiStateStore.statusMessage?.currentCount || 1) % 30 ===
+      this.latencyMeasureInterval
+    ) {
       rootStore.rateLimitStore.snapshotLatencyList[this.latencyName] = latency;
     }
     return latency;
@@ -119,10 +122,6 @@ function getStashTabWithChildren(tab: IStashTab, league: string, children?: bool
   rootStore.rateLimitStore.setEstimatedSnapshotTime();
   return from(RateLimitStore.waitMulti(rootStore.rateLimitStore.stashLimit)).pipe(
     concatMap(() => {
-      if (rootStore.uiStateStore.currentRequest !== undefined) {
-        rootStore.uiStateStore.currentRequest++;
-        console.log(`Increased currentRequest count to ${rootStore.uiStateStore.currentRequest}`);
-      }
       // Measure first and every 30th request
       if (rootStore.rateLimitStore.stashLatencyTimer) {
         rootStore.rateLimitStore.stashLatencyTimer.restart();
@@ -134,9 +133,9 @@ function getStashTabWithChildren(tab: IStashTab, league: string, children?: bool
       const id = `${prefix}${tab.id}`;
       return axios.get<IStashTabResponse>(`${apiUrl}/stash/${league}/${id}`).pipe(
         map((stashTab) => {
-          rootStore.uiStateStore.incrementStatusMessageCount();
           const latency = rootStore.rateLimitStore.stashLatencyTimer?.stopAndWrite() || 0;
           totalTimer.stopAndWrite(latency);
+          rootStore.uiStateStore.incrementStatusMessageCount();
           RateLimitStore.adjustRateLimits(rootStore.rateLimitStore.stashLimit, stashTab.headers);
           return stashTab.data.stash;
         })
