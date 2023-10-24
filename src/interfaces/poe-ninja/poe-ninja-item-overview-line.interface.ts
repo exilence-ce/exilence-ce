@@ -26,6 +26,9 @@ export interface IPoeNinjaItemOverviewLine {
   itemType: string;
   chaosValue: number;
   exaltedValue: number;
+  divineValue: number;
   count: number;
   detailsId: string;
+  tradeInfo: [];
+  listingCount: number;
 }

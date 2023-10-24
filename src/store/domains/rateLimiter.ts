@@ -85,7 +85,6 @@ export class RateLimiter {
   @persist window!: number;
 
   private _destroyed = false;
-  private DEBUG = true;
 
   constructor(policy: string, max: number, window: number) {
     makeObservable(this);
@@ -255,16 +254,13 @@ export class RateLimiter {
     let simulation: Array<{ max: number; window: number; stack: number[] }>;
     {
       const now = moment.utc().valueOf();
-      simulation = Array.from(limiters)
-        .slice()
-        .sort((a, b) => a.max - b.max)
-        .map((l) => ({
-          max: l.max,
-          window: l.window,
-          stack: ignoreState
-            ? []
-            : l.stack.map((entry) => entry.releasedAt - now).sort((a, b) => a - b),
-        }));
+      simulation = Array.from(limiters).map((l) => ({
+        max: l.max,
+        window: l.window,
+        stack: ignoreState
+          ? []
+          : l.stack.map((entry) => entry.releasedAt - now).sort((a, b) => a - b),
+      }));
       const maxRequests = simulation.map((limit) => limit.max).sort((a, b) => b - a)[0] || 0;
       if (!ignoreRequestOverflow && requests > maxRequests) {
         requests = requests % maxRequests;

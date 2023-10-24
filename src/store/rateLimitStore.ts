@@ -274,10 +274,6 @@ export class RateLimitStore {
         default:
           break;
       }
-
-      // if (this.rootStore.uiStateStore.statusMessage?.message === 'refreshing_stash_tabs') {
-      //   this.totalEstimatedTime = totalTime;
-      // }
     } else {
       const stashListTimes = RateLimiter.limiterWaitInfo(1, this.stashListLimit);
       const characterTimes = RateLimiter.limiterWaitInfo(1, this.characterLimit);
@@ -363,7 +359,7 @@ export class RateLimitStore {
     retryAfter: number
   ): void {
     /* eslint-disable no-console */
-    const DESYNC_FIX = 0.05; // apiLatencySeconds
+    const DESYNC_FIX = 0.0; // apiLatencySeconds - We can ignore this, since we wait for each request to complete. Max 1 request is in queue
 
     const limitRuleState = stateStr
       .split(',')
