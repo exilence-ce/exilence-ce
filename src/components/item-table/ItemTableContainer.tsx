@@ -166,6 +166,7 @@ const ItemTableContainer = ({
   const [instance] = useState<TableInstance<object>>(
     useTable(
       {
+        // @ts-ignore
         columns: getColumns,
         defaultColumn,
         data,

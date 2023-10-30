@@ -1,4 +1,4 @@
-import { LocalizationProvider, TimePicker } from '@mui/lab';
+import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -71,10 +71,8 @@ const ManualAdjustmentDialog = ({
             <TimePicker
               value={timeValue}
               onChange={(newValue) => setTimeValue(newValue)}
-              renderInput={(params) => <TextField {...params} fullWidth />}
               ampm={false}
-              inputFormat="HH:mm:ss"
-              mask="__:__:__"
+              format="HH:mm:ss"
               views={['hours', 'minutes', 'seconds']}
               label={t('label.adjust_manual_offset')}
             />

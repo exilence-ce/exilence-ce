@@ -60,6 +60,7 @@ enableLogging({
 
 configure({ enforceActions: 'observed' });
 
+// @ts-ignore
 momentDurationFormatSetup(moment);
 moment.locale(electronService.appLocale);
 

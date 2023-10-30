@@ -67,6 +67,7 @@ const PriceTableContainer = () => {
   const [instance] = useState<TableInstance<object>>(
     useTable(
       {
+        // @ts-ignore
         columns: priceTableColumns,
         defaultColumn,
         data,

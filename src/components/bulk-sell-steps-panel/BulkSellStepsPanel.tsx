@@ -57,6 +57,7 @@ const BulkSellStepsPanel = () => {
             .write([
               // @ts-ignore
               new ClipboardItem({
+                // @ts-ignore
                 'image/png': blob,
                 'text/plain': textBlob,
               }),

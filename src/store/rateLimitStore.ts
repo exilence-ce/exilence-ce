@@ -142,6 +142,7 @@ export class RateLimitStore {
     if (this.rootStore.uiStateStore.isSnapshotting) {
       // Calc the current estimated snapshot time
       switch (this.rootStore.uiStateStore.statusMessage?.message) {
+        // @ts-ignore
         case 'refreshing_stash_tabs':
           time = RateLimiter.estimateTime(1, this.stashListLimit, true);
           latency = this.snapshotLatencyList['stash-list-request-limit'];
@@ -164,7 +165,7 @@ export class RateLimitStore {
             };
             this.snapshotTimeStart = moment.utc().valueOf();
           }
-
+        // @ts-ignore
         case 'fetching_stash_tab':
           // Fetching character & parent stashtabs - Character and Stashtabs are parallel requested, but at different amount of requests
           if (this.rootStore.uiStateStore.statusMessage?.message === 'fetching_stash_tab') {
@@ -198,6 +199,7 @@ export class RateLimitStore {
               this.snapshotLatencyList['stash-request-limit'],
             ]);
           }
+        // @ts-ignore
         case 'fetching_subtabs':
           // Fetching substashtabs
           if (this.rootStore.uiStateStore.statusMessage?.message === 'fetching_subtabs') {
