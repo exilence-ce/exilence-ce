@@ -73,6 +73,9 @@ export class Session {
   @persist @observable offsetInactive: number = 0;
   @persist @observable offsetManualAdjustment: number = 0;
 
+  // A trigger for computed functions to update charts
+  @observable updateCounter: number = 0;
+
   @persist @observable addNextSnapshotDiffToBase: boolean = false;
 
   @observable chartPreviewSnapshotId: string | undefined = undefined;
@@ -455,6 +458,7 @@ export class Session {
 
   @action
   resolveTimeAndContinueWith(continueWith: TimestapTypesExtended, refTime?: moment.Moment) {
+    this.updateCounter++;
     const lastType = this.resolveTime(refTime);
     if (continueWith === 'start' || (continueWith === 'keeplast' && lastType === 'start')) {
       this.lastStartAt = moment.utc().valueOf();
@@ -907,13 +911,15 @@ export class Session {
 
   @computed
   get sessionTimePieChartData() {
+    // Trigger every time when time got resolved
+    this.updateCounter;
     let sessionDuration = moment.utc().diff(this.sessionTimestamp);
 
     const getFormattedDuration = this.getFormattedDuration;
 
     let offsetPause = this.offsetPause;
     let offsetOffline = this.offsetOffline;
-    let Inactive = this.offsetInactive;
+    let offsetInactive = this.offsetInactive;
     // let offsetManualAdjustment = this.offsetManualAdjustment;
 
     if (this.chartPreviewSnapshotId) {
@@ -922,14 +928,14 @@ export class Session {
         sessionDuration = this.snapshots[index].networthSessionOffsets!.sessionDuration;
         offsetPause = this.snapshots[index].networthSessionOffsets!.offsetPause;
         offsetOffline = this.snapshots[index].networthSessionOffsets!.offsetOffline;
-        Inactive = this.snapshots[index].networthSessionOffsets!.offsetInactive;
+        offsetInactive = this.snapshots[index].networthSessionOffsets!.offsetInactive;
         // offsetManualAdjustment = this.snapshots[index].networthSessionOffsets!
         //   .offsetManualAdjustment;
       } else {
         sessionDuration = 0;
         offsetPause = 0;
         offsetOffline = 0;
-        Inactive = 0;
+        offsetInactive = 0;
         // offsetManualAdjustment = 0;
       }
     }
@@ -964,6 +970,7 @@ export class Session {
               },
               stops: [
                 [0, netWorthSessionColors[0]],
+                // @ts-ignore
                 [1, HC.color(primaryDarker).setOpacity(0.2).get('rgba')],
               ],
             },
@@ -984,6 +991,7 @@ export class Session {
               },
               stops: [
                 [0, netWorthSessionColors[1]],
+                // @ts-ignore
                 [1, HC.color(primaryDarker).setOpacity(0.2).get('rgba')],
               ],
             },
@@ -1003,6 +1011,7 @@ export class Session {
               },
               stops: [
                 [0, netWorthSessionColors[2]],
+                // @ts-ignore
                 [1, HC.color(primaryDarker).setOpacity(0.2).get('rgba')],
               ],
             },
@@ -1013,7 +1022,7 @@ export class Session {
           },
           {
             name: 'Inactive',
-            y: Inactive || 0,
+            y: offsetInactive || 0,
             color: {
               radialGradient: {
                 cx: 0.6,
@@ -1022,6 +1031,7 @@ export class Session {
               },
               stops: [
                 [0, netWorthSessionColors[3]],
+                // @ts-ignore
                 [1, HC.color(primaryDarker).setOpacity(0.2).get('rgba')],
               ],
             },
