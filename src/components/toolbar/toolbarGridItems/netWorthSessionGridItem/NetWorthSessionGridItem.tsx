@@ -7,6 +7,7 @@ import PauseIcon from '@mui/icons-material/PauseCircleFilled';
 import StopIcon from '@mui/icons-material/StopCircle';
 import CachedIcon from '@mui/icons-material/Cached';
 import { Profile } from '../../../../store/domains/profile';
+import { useLocation } from 'react-router';
 
 type NetWorthSessionGridItemProps = {
   sessionStarted: boolean;
@@ -37,6 +38,8 @@ const NetWorthSessionGridItem = ({
 }: NetWorthSessionGridItemProps) => {
   const classes = useStyles();
   const { t } = useTranslation();
+  const { pathname } = useLocation();
+  const isNetworthRoute = pathname === '/net-worth' || pathname === '/';
 
   const isStartDisabled =
     (sessionStarted && !sessionPaused) || // Enable for start and continue
@@ -117,7 +120,7 @@ const NetWorthSessionGridItem = ({
         <Tooltip title={t('label.toggle_net_worth_session_icon_title') || ''} placement="bottom">
           <span>
             <IconButton
-              disabled={!sessionStarted}
+              disabled={!sessionStarted || !isNetworthRoute}
               aria-label="toggle session networth"
               className={classes.iconButton}
               onClick={() => toggleSessionNetWorth()}
