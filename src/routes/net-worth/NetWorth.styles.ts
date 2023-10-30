@@ -5,11 +5,6 @@ import { primaryLighter } from '../../assets/themes/exilence-theme';
 
 export const useStyles = makeStyles((theme) =>
   createStyles({
-    expansionContent: {
-      '&$expanded': {
-        margin: '12px 0',
-      },
-    },
     poeNinjaCredit: {
       right: theme.spacing(2),
     },
