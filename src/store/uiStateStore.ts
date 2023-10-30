@@ -89,6 +89,7 @@ export class UiStateStore {
   @persist @observable netWorthItemsExpanded: boolean = true;
   @persist @observable sessionTimeChartExpanded: boolean = true;
   @persist @observable sessionTimePieChartExpanded: boolean = true;
+  @persist @observable sessionTabChartExpanded: boolean = false;
   @observable timeSinceLastSnapshotLabel: string | undefined = undefined;
   @observable timeSincePricesFetchedLabel: string | undefined = undefined;
   @observable statusMessage: IStatusMessage | undefined = undefined;
@@ -251,6 +252,11 @@ export class UiStateStore {
   @action
   setSessionTimePieChartExpanded(expanded: boolean) {
     this.sessionTimePieChartExpanded = expanded;
+  }
+
+  @action
+  setSessionTabChartExpanded(expanded: boolean) {
+    this.sessionTabChartExpanded = expanded;
   }
 
   @action

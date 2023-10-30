@@ -25,8 +25,16 @@ const NetWorthTabChartAccordion = () => {
 
   return (
     <Accordion
-      expanded={uiStateStore!.tabChartExpanded}
-      onChange={() => uiStateStore!.setTabChartExpanded(!uiStateStore!.tabChartExpanded)}
+      expanded={
+        uiStateStore.netWorthSessionOpen
+          ? uiStateStore!.sessionTabChartExpanded
+          : uiStateStore!.tabChartExpanded
+      }
+      onChange={() =>
+        uiStateStore.netWorthSessionOpen
+          ? uiStateStore!.setSessionTabChartExpanded(!uiStateStore!.sessionTabChartExpanded)
+          : uiStateStore!.setTabChartExpanded(!uiStateStore!.tabChartExpanded)
+      }
     >
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
