@@ -32,10 +32,6 @@ const SUPPORTED_PRESETS = [
     hiddenColumns: ['Ilvl / Tier'],
   },
   {
-    name: 'label.prophecies',
-    hiddenColumns: ['Ilvl / Tier'],
-  },
-  {
     name: 'label.scarabs',
     hiddenColumns: ['Ilvl / Tier'],
   },
