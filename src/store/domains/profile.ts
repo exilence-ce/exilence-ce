@@ -52,8 +52,6 @@ import { Session } from './session';
 import { Snapshot } from './snapshot';
 import { StashTabSnapshot } from './stashtab-snapshot';
 
-// Fixed & Improved: Overlay sometimes do not update: ResetImcome especially
-
 export class Profile {
   @persist uuid: string = uuidv4();
 
@@ -79,14 +77,15 @@ export class Profile {
   constructor(obj?: IProfile, disposeSession = false, currentProfile?: Profile) {
     makeObservable(this);
     Object.assign(this, obj);
-    // Fallback for older profiles - needed if hydrated? See line 69
+    // Fallback for older profiles - needed if hydrated?
     if (!this.session) this.newSession();
     else this.session.setProfileId(this.uuid);
     // Prevent memory leaks for temp profils or sessions
     if (disposeSession) this.session.dispose();
     if (currentProfile) {
       // TODO: Save to backend
-      this.lastFoundActiveStashTabIds = currentProfile.lastFoundActiveStashTabIds;
+      this.lastFoundActiveStashTabIds =
+        currentProfile.lastFoundActiveStashTabIds || currentProfile.activeStashTabIds.length;
       this.lastFoundActiveSubStashTabIds = currentProfile.lastFoundActiveSubStashTabIds;
       this.snapshots = currentProfile.snapshots;
       this.session = currentProfile.session;
@@ -356,11 +355,13 @@ export class Profile {
   updateFromApiProfile(apiProfile: IApiProfile) {
     this.activeLeagueId = apiProfile.activeLeagueId;
     this.activePriceLeagueId = apiProfile.activePriceLeagueId;
-    this.activeStashTabIds = apiProfile.activeStashTabIds;
     this.includeInventory = apiProfile.includeInventory;
     this.includeEquipment = apiProfile.includeEquipment;
     this.activeCharacterName = apiProfile.activeCharacterName;
     this.name = apiProfile.name;
+    this.activeStashTabIds = apiProfile.activeStashTabIds;
+    this.lastFoundActiveStashTabIds = apiProfile.activeStashTabIds.length;
+    this.lastFoundActiveSubStashTabIds = undefined;
   }
 
   @action
@@ -450,12 +451,12 @@ export class Profile {
     let income: number;
     let netWorth: number;
     if (sessionmode) {
-      income = rootStore.accountStore.getSelectedAccount!.activeProfile!.session.income;
+      income = rootStore.accountStore.getSelectedAccount.activeProfile!.session.income;
       netWorth = rootStore.accountStore.getSelectedAccount.activeProfile!.session.netWorthValue;
     } else {
       income = rootStore.signalrStore.activeGroup
         ? rootStore.signalrStore.activeGroup.income
-        : rootStore.accountStore.getSelectedAccount!.activeProfile!.income;
+        : rootStore.accountStore.getSelectedAccount.activeProfile!.income;
       netWorth = rootStore.signalrStore.activeGroup
         ? rootStore.signalrStore.activeGroup.netWorthValue
         : rootStore.accountStore.getSelectedAccount.activeProfile!.netWorthValue;
