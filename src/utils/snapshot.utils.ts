@@ -373,8 +373,8 @@ export const diffSnapshots = (
   itemsToRemove.map((item) => {
     const recentItem = { ...item };
     if (recentItem.total !== 0 && recentItem.stackSize !== 0) {
-      recentItem.total = -Math.abs(recentItem.total);
-      recentItem.stackSize = -Math.abs(recentItem.stackSize);
+      recentItem.total = -recentItem.total;
+      recentItem.stackSize = -recentItem.stackSize;
       if (removedItemsPriceResolver) removedItems.push(recentItem);
       difference.push(recentItem);
     }
