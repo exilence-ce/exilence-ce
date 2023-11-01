@@ -101,6 +101,7 @@ declare module 'react-table' {
       UseResizeColumnsColumnOptions<D>,
       UseSortByColumnOptions<D> {
     align?: string;
+    currencySwitchId?: ItemValueCurrencySwitchId;
   }
 
   export interface ColumnInstance<D extends object = {}>
@@ -117,5 +118,7 @@ declare module 'react-table' {
       UseGroupByRowProps<D>,
       UseRowSelectRowProps<D> {}
 }
+
+export type ItemValueCurrencySwitchId = 'calculated' | 'total' | 'comulative' | 'customPrice';
 
 export type TableMouseEventHandler = (instance: TableInstance) => MouseEventHandler;

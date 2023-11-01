@@ -10,6 +10,12 @@ export type ReleaseChannel = 'latest' | 'beta';
 export type Currency = 'chaos' | 'exalt' | 'divine';
 export type AppExitTypes = 'minimize-to-tray' | 'exit';
 
+export type CurrencyShort = 'c' | 'e' | 'd';
+export type CurrencyHeader = {
+  header: string;
+  type: CurrencyShort;
+};
+
 export class SettingStore {
   @persist @observable lowConfidencePricing: boolean = false;
   @persist @observable autoSnapshotting: boolean = false;
@@ -20,6 +26,8 @@ export class SettingStore {
   @persist @observable priceThreshold: number = 0;
   @persist @observable totalPriceThreshold: number = 0;
   @persist @observable currency: Currency = 'chaos';
+  @persist('list') @observable currencyHeaders: CurrencyHeader[] = [];
+
   @persist @observable autoSnapshotInterval: number = 60 * 20 * 1000; // default to 20 minutes
   @persist @observable uiScale: number = electronService.webFrame.getZoomFactor() * 100;
   @persist @observable logPath: string =
@@ -58,6 +66,22 @@ export class SettingStore {
   setCurrencyDisplay(value: Currency) {
     this.currency = value;
     rootStore.accountStore.getSelectedAccount?.activeProfile?.updateNetWorthOverlay();
+  }
+
+  @action
+  setCurrencyHeaderDisplay(header: string) {
+    const foundHeader = this.currencyHeaders.find((h) => h.header === header);
+    if (foundHeader) {
+      if (foundHeader.type === 'c') {
+        foundHeader.type = 'e';
+      } else if (foundHeader.type === 'e') {
+        foundHeader.type = 'd';
+      } else {
+        foundHeader.type = 'c';
+      }
+    } else {
+      this.currencyHeaders.push({ header, type: 'c' });
+    }
   }
 
   @action

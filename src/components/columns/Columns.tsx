@@ -12,6 +12,8 @@ import { itemColors, primaryLighter, rarityColors } from '../../assets/themes/ex
 import { ISparkLineDetails } from '../../interfaces/external-price.interface';
 import { IPricedItem } from '../../interfaces/priced-item.interface';
 import { ICompactTab } from '../../interfaces/stash.interface';
+import { CurrencyHeader, CurrencyShort } from '../../store/settingStore';
+import { ItemValueCurrencySwitchId } from '../../types/react-table-config';
 import { getRarity, parseTabNames } from '../../utils/item.utils';
 import { formatSparklineChartData, getRawPriceFromPricedItem } from '../../utils/price.utils';
 import { openCustomLink } from '../../utils/window.utils';
@@ -183,6 +185,8 @@ export function sparkLine(options: { accessor: string; header: string }): Column
     },
   };
 }
+// # Wreid bug: Ids have to match accessor name or the id will rename the property in the object and the accessor does not match anymore?!
+export const ITEMVALUE_HEADERS: ItemValueCurrencySwitchId[] = ['calculated', 'total', 'comulative'];
 
 export function itemValue(options: {
   accessor?: string;
@@ -191,13 +195,35 @@ export function itemValue(options: {
   placeholder?: string;
   cumulative?: boolean;
   diff?: boolean;
+  currencySwitchId?: ItemValueCurrencySwitchId;
+  currencyHeaders?: CurrencyHeader[];
 }): Column<object> {
-  const { header, accessor, editable, placeholder, cumulative, diff } = options;
+  const {
+    header,
+    accessor,
+    editable,
+    placeholder,
+    cumulative,
+    diff,
+    currencySwitchId,
+    currencyHeaders,
+  } = options;
+
+  let currencyType: CurrencyShort = 'c';
+  let adjustedHeader = `${header} (${currencyType})`;
+  if (currencySwitchId) {
+    const currencyHeader = currencyHeaders?.find((h) => h.header === currencySwitchId);
+    if (currencyHeader) {
+      currencyType = currencyHeader.type;
+      adjustedHeader = `${header} (${currencyType})`;
+    }
+  }
 
   return {
-    Header: header,
+    Header: adjustedHeader,
     accessor,
     align: 'right',
+    currencySwitchId,
     sortType: 'basic',
     // eslint-disable-next-line react/display-name
     Cell: (data: any) => {
@@ -213,6 +239,7 @@ export function itemValue(options: {
       } else if (accessor) {
         value = data.row.values[accessor];
       }
+
       return (
         <ItemValueCell
           value={value}
@@ -220,6 +247,7 @@ export function itemValue(options: {
           pricedItem={data.row.original}
           placeholder={placeholder}
           diff={diff}
+          currencyType={currencyType}
         />
       );
     },
@@ -326,6 +354,7 @@ type ItemValueCellProps = {
   pricedItem: IPricedItem;
   placeholder?: string;
   diff?: boolean;
+  currencyType?: CurrencyShort;
 };
 
 const ItemValueCellComponent = ({
@@ -334,15 +363,25 @@ const ItemValueCellComponent = ({
   pricedItem,
   placeholder,
   diff,
+  currencyType,
 }: ItemValueCellProps) => {
-  const { uiStateStore, customPriceStore } = useStores();
+  const { uiStateStore, customPriceStore, priceStore } = useStores();
 
   const classes = useStyles();
   const { t } = useTranslation();
+
   const tryParseNumber = (value: boolean | string | number, diff?: boolean) => {
-    return typeof value === 'number'
-      ? `${diff && value > 0 ? '+ ' : ''}${value.toFixed(2)}`
-      : value;
+    if (typeof value === 'number') {
+      let calculatedValue = value;
+      if (currencyType === 'e' && priceStore.exaltedPrice) {
+        calculatedValue = calculatedValue / priceStore.exaltedPrice;
+      } else if (currencyType === 'd' && priceStore.divinePrice) {
+        calculatedValue = calculatedValue / priceStore.divinePrice;
+      }
+      return `${diff && calculatedValue > 0 ? '+ ' : ''}${calculatedValue.toFixed(2)}`;
+    } else {
+      return value;
+    }
   };
 
   const toggleCustomPriceDialog = () => {

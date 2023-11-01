@@ -1,4 +1,5 @@
 import { Column } from 'react-table';
+import { CurrencyHeader } from '../../store/settingStore';
 import {
   itemCorrupted,
   itemIcon,
@@ -11,7 +12,7 @@ import {
   sparkLine,
 } from '../columns/Columns';
 
-const itemTableColumns: Column<object>[] = [
+const itemTableColumns = (currencyHeaders: CurrencyHeader[]): Column<object>[] => [
   itemIcon({
     accessor: 'icon',
     header: 'Icon',
@@ -57,16 +58,22 @@ const itemTableColumns: Column<object>[] = [
     header: 'Price last 7 days',
   }),
   itemValue({
+    currencySwitchId: 'calculated',
     accessor: 'calculated',
-    header: 'Price (c)',
+    header: 'Price',
+    currencyHeaders,
   }),
   itemValue({
+    currencySwitchId: 'total',
     accessor: 'total',
-    header: 'Total value (c)',
+    header: 'Total value',
+    currencyHeaders,
   }),
   itemValue({
-    header: 'Cumulative (c)',
+    currencySwitchId: 'comulative',
+    header: 'Cumulative',
     cumulative: true,
+    currencyHeaders,
   }),
 ];
 

@@ -44,6 +44,7 @@ import itemTableBulkSellColumns from './itemTableBulkSellColumns';
 import itemTableColumns from './itemTableColumns';
 import itemTableGroupColumns from './itemTableGroupColumns';
 import itemTableComparisonColumns from './itemTableComparisonColumns';
+import { computed } from 'mobx';
 
 export const itemTableFilterSpacing = 2;
 
@@ -113,7 +114,7 @@ const ItemTableContainer = ({
   bulkSellView = false,
   searchFilterText = '',
 }: ItemTableContainerProps) => {
-  const { accountStore, signalrStore, uiStateStore } = useStores();
+  const { accountStore, signalrStore, uiStateStore, settingStore } = useStores();
   const activeProfile = accountStore!.getSelectedAccount.activeProfile;
   const { activeGroup } = signalrStore!;
   const classes = useStyles();
@@ -139,13 +140,17 @@ const ItemTableContainer = ({
   ]);
 
   const getColumns = useMemo(() => {
-    if (activeGroup && !bulkSellView && !uiStateStore.netWorthSessionOpen) {
-      return itemTableGroupColumns;
-    }
-    if (!activeGroup && bulkSellView) return itemTableBulkSellColumns;
-    if (uiStateStore.itemTableSelection === 'comparison') return itemTableComparisonColumns;
-    return itemTableColumns;
-  }, [activeGroup, uiStateStore.itemTableSelection]);
+    // https://github.com/mobxjs/mobx/discussions/3348 - Get currencyHeaders list change reflected
+    return computed(() => {
+      if (activeGroup && !bulkSellView && !uiStateStore.netWorthSessionOpen) {
+        return itemTableGroupColumns(settingStore.currencyHeaders);
+      }
+      if (!activeGroup && bulkSellView) return itemTableBulkSellColumns;
+      if (uiStateStore.itemTableSelection === 'comparison')
+        return itemTableComparisonColumns(settingStore.currencyHeaders);
+      return itemTableColumns(settingStore.currencyHeaders);
+    });
+  }, []).get();
 
   // FIXME: This makes no sense, add this to getItemsMemo
   const data = useMemo(() => {
@@ -306,9 +311,11 @@ const ItemTableContainer = ({
                 {columnsOpen && (
                   <ColumnHidePage
                     instance={instance}
+                    allColumns={instance.allColumns}
                     onClose={handleClose}
                     show={columnsOpen}
                     anchorEl={anchorEl}
+                    bulkSellView={bulkSellView}
                   />
                 )}
                 {hideableColumns.length > 1 && (

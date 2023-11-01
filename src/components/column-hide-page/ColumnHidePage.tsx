@@ -3,35 +3,43 @@ import {
   Checkbox,
   FormControl,
   FormControlLabel,
+  IconButton,
   InputLabel,
   MenuItem,
   Popover,
   Select,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { runInAction } from 'mobx';
 import { observer } from 'mobx-react-lite';
 import React, { ReactElement, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TableInstance } from 'react-table';
+import { ColumnInstance, TableInstance } from 'react-table';
 import { useStores } from '../..';
+import ChangeCircleIcon from '@mui/icons-material/ChangeCircle';
 import SUPPORTED_PRESETS from '../bulk-sell-column-presets-panel/supportedPresets';
 import useStyles from './ColumnHidePage.styles';
+import { ITEMVALUE_HEADERS } from '../columns/Columns';
 
 type ColumnHidePageProps = {
   instance: TableInstance;
+  allColumns: ColumnInstance<object>[];
   anchorEl: Element | null;
   onClose: () => void;
   show: boolean;
+  bulkSellView: boolean;
 };
 
 const id = 'popover-column-hide';
 
 const ColumnHidePage = ({
   instance,
+  allColumns,
   anchorEl,
   onClose,
   show,
+  bulkSellView,
 }: ColumnHidePageProps): ReactElement | null => {
   const {
     uiStateStore: {
@@ -40,11 +48,13 @@ const ColumnHidePage = ({
       bulkSellActivePreset,
       setItemtableColumnPresets,
     },
+    priceStore,
+    settingStore,
   } = useStores();
   const classes = useStyles();
-  const { allColumns, toggleHideColumn, setHiddenColumns } = instance;
+  const { toggleHideColumn, setHiddenColumns } = instance;
 
-  const [hideableColumns, setHideableColumns] = useState(
+  const [hideableColumns, setHideableColumns] = useState(() =>
     allColumns.filter((column) => !(column.id === '_selector'))
   );
 
@@ -95,7 +105,7 @@ const ColumnHidePage = ({
   useEffect(() => {
     setHiddenColumns(bulkSellActivePreset?.hiddenColumns);
     updateState();
-  }, [bulkSellActivePreset]);
+  }, [bulkSellActivePreset, allColumns]);
 
   const label = t('label.select_column_preset');
   return hideableColumns.length > 1 ? (
@@ -147,15 +157,47 @@ const ColumnHidePage = ({
                 <FormControlLabel
                   key={column.id}
                   control={
-                    <Checkbox
-                      color="primary"
-                      value={`${column.id}`}
-                      disabled={column.isVisible && onlyOneOptionLeft}
-                    />
+                    <>
+                      <Checkbox
+                        color="primary"
+                        value={`${column.id}`}
+                        disabled={column.isVisible && onlyOneOptionLeft}
+                        checked={column.isVisible}
+                        onChange={() => onColumnChange(column.id, column.isVisible)}
+                      />
+                      {!bulkSellView &&
+                        column.currencySwitchId &&
+                        ITEMVALUE_HEADERS.includes(column.currencySwitchId) && (
+                          <Tooltip
+                            title={
+                              <>
+                                <Typography variant="subtitle1" color="inherit" gutterBottom>
+                                  1 ex = {priceStore.exaltedPrice?.toFixed(1)} c
+                                  <br />1 divine = {priceStore.divinePrice?.toFixed(1)} c
+                                </Typography>
+                                <em>{t('action.currency_switch')}</em>
+                              </>
+                            }
+                            classes={{ tooltip: classes.tooltip }}
+                            placement="bottom-end"
+                          >
+                            <IconButton
+                              className={classes.adornmentIcon}
+                              data-tour-elem="currencySwitch"
+                              size="small"
+                              onClick={() => {
+                                if (column.currencySwitchId) {
+                                  settingStore.setCurrencyHeaderDisplay(column.currencySwitchId);
+                                }
+                              }}
+                            >
+                              <ChangeCircleIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                    </>
                   }
                   label={column.render('Header')}
-                  checked={column.isVisible}
-                  onChange={() => onColumnChange(column.id, column.isVisible)}
                 />
               );
             })}
