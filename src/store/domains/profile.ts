@@ -704,7 +704,7 @@ export class Profile {
       prices = prices.filter((p) => p.count > 10);
     }
 
-    if (rootStore.settingStore.totalPriceThreshold === 0) {
+    if (rootStore.settingStore.priceThreshold > 0) {
       prices = prices.filter(
         (p) => p.calculated && p.calculated >= rootStore.settingStore.priceThreshold
       );
