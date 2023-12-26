@@ -8,6 +8,7 @@ import { IPricedItem } from '../interfaces/priced-item.interface';
 import { IStashTab } from '../interfaces/stash.interface';
 import { Snapshot } from '../store/domains/snapshot';
 import { findItem, getRarityIdentifier, mergeItemStacks } from './item.utils';
+import { BaseSnapshotID, HeadSnapshotID } from '../store/uiStateStore';
 
 export const mapSnapshotToApiSnapshot = (snapshot: Snapshot, stashTabs?: IStashTab[]) => {
   const filteredLeagueTabs = stashTabs?.filter((st) =>
@@ -113,6 +114,22 @@ export const formatStashTabSnapshotsForChart = (
   return stashTabSnapshots
     .map((s) => [moment(new Date(s.created).getTime()).valueOf(), +s.value.toFixed(2)])
     .sort((n1, n2) => n1[0] - n2[0]);
+};
+
+const snapshotFinder = (id: BaseSnapshotID | HeadSnapshotID) => (
+  snapshot: Snapshot,
+  index: number
+) => {
+  switch (id) {
+    case 'latest':
+      return index === 0;
+    case 'second-to-last':
+      return index === 1;
+  }
+  return snapshot.uuid === id;
+};
+export const findSnapshot = (snapshots: Snapshot[], id: BaseSnapshotID | HeadSnapshotID) => {
+  return snapshots.find(snapshotFinder(id));
 };
 
 export const diffSnapshots = (snapshot1: IApiSnapshot, snapshot2: IApiSnapshot): IPricedItem[] => {
