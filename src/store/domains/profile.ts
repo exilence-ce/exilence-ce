@@ -755,8 +755,9 @@ export class Profile {
       const apiSnapshot = mapSnapshotToApiSnapshot(snapshotToAdd, activeAccountLeague.stashtabList);
       const callback = () => {
         // keep items for only 10 snapshots at all times
-        if (this.snapshots.length > 10) {
-          this.snapshots[10].stashTabSnapshots.forEach((stss) => {
+        const maxSnapshotsWithItems = rootStore.settingStore.maxSnapshotsWithItems;
+        if (this.snapshots.length > maxSnapshotsWithItems) {
+          this.snapshots[maxSnapshotsWithItems].stashTabSnapshots.forEach((stss) => {
             stss.pricedItems = [];
           });
         }

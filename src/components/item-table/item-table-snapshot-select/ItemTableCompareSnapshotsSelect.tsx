@@ -11,7 +11,7 @@ import { BaseSnapshotID, HeadSnapshotID } from '../../../store/uiStateStore';
 const ItemTableCompareSnapshotsSelect = () => {
   const { t } = useTranslation();
   const classes = useStyles();
-  const { uiStateStore, accountStore } = useStores();
+  const { uiStateStore, accountStore, settingStore } = useStores();
 
   const activeProfile = accountStore!.getSelectedAccount.activeProfile;
 
@@ -19,7 +19,14 @@ const ItemTableCompareSnapshotsSelect = () => {
     return <></>;
   }
 
-  const snapshots = activeProfile.snapshots || [];
+  const snapshots = useMemo(
+    () =>
+      activeProfile.snapshots
+        .slice(0, settingStore.maxSnapshotsWithItems)
+        .filter((snapshot) => snapshot.stashTabSnapshots.some((s) => s.pricedItems.length > 0)) ||
+      [],
+    [activeProfile.snapshots, settingStore.maxSnapshotsWithItems]
+  );
   const baseSnapshot = useMemo(
     () => findSnapshot(snapshots, uiStateStore.itemTableSnapshotComparisonBase),
     [uiStateStore.itemTableSnapshotComparisonBase, snapshots]

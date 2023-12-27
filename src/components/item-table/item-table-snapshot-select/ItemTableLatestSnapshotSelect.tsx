@@ -1,4 +1,4 @@
-import { default as React } from 'react';
+import { default as React, useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
 import { FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import moment from 'moment/moment';
@@ -10,7 +10,7 @@ import { HeadSnapshotID } from '../../../store/uiStateStore';
 const ItemTableLatestSnapshotSelect = () => {
   const { t } = useTranslation();
   const classes = useStyles();
-  const { uiStateStore, accountStore } = useStores();
+  const { uiStateStore, accountStore, settingStore } = useStores();
 
   const activeProfile = accountStore!.getSelectedAccount.activeProfile;
 
@@ -18,7 +18,14 @@ const ItemTableLatestSnapshotSelect = () => {
     return <></>;
   }
 
-  const snapshots = activeProfile.snapshots || [];
+  const snapshots = useMemo(
+    () =>
+      activeProfile.snapshots
+        .slice(0, settingStore.maxSnapshotsWithItems)
+        .filter((snapshot) => snapshot.stashTabSnapshots.some((s) => s.pricedItems.length > 0)) ||
+      [],
+    [activeProfile.snapshots, settingStore.maxSnapshotsWithItems]
+  );
 
   const handleSnapshotChange = (event: SelectChangeEvent) => {
     uiStateStore.setItemTableSnapshotHead(event.target.value as HeadSnapshotID);
