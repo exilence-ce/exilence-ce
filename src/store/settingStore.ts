@@ -26,6 +26,7 @@ export class SettingStore {
     'C:/Program Files (x86)/Grinding Gear Games/Path of Exile/logs/Client.txt';
   @persist @observable appExitAction: AppExitTypes =
     electronService.localSettings?.appExitAction || 'minimize-to-tray';
+  @persist @observable maxSnapshotsWithItems: number = 10;
 
   constructor(private rootStore: RootStore) {
     makeObservable(this);
