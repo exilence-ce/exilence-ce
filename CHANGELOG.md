@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.2.6] - 2024-04-07
+#### Added
+- Added Support for Necropolis Allflame-Embers & Coffins
+
 ## [1.2.5] - 2023-10-01
 #### Fixed
 - Fixed internationization being broken on Windows after fixing it for Linux & Mac...

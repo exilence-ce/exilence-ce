@@ -59,6 +59,8 @@ function getItemCategories() {
     //'ClusterJewel',
     'BlightedMap',
     'BlightRavagedMap',
+    "Coffin",
+    "AllflameEmber",
     //'BaseType',
     //'HelmetEnchant',
   ];
