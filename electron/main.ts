@@ -91,7 +91,7 @@ function createWindow() {
   manage(browserWindows[MAIN_BROWSER_WINDOW]);
   browserWindows[
     MAIN_BROWSER_WINDOW
-  ].webContents.userAgent = `OAuth exilencece/1.2.7 (contact: exilencece@gmail.com) StrictMode`;
+  ].webContents.userAgent = `OAuth exilencece/1.2.8 (contact: exilencece@gmail.com) StrictMode`;
 
   isDev
     ? browserWindows[MAIN_BROWSER_WINDOW].loadURL(

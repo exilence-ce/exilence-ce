@@ -3,7 +3,7 @@ import * as isDev from 'electron-is-dev';
 import { browserWindows, browserWindowsConfig, LOG_MONITOR_OVERLAY } from '../../../browserWindows';
 
 import checkForMissingWindow from '../../utils';
-import {LOGS} from "../../../enums";
+import { LOGS } from '../../../enums';
 
 type CreateLogMonitorProps = {
   mainWindow: BrowserWindow;

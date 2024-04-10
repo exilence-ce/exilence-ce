@@ -85,6 +85,13 @@ function priceItem(item: IPricedItem, prices: IExternalPrice[]) {
               (p) => p.name === item.name && p.ilvl && (p.ilvl === 76 || p.ilvl > 76)
             );
           }
+        } else if (item.coffin) {
+          const allMatchedPrices = prices
+            .filter((p) => p.name === item.name)
+            .sort((a, b) => a.ilvl! - b.ilvl!);
+          if (allMatchedPrices.length >= 0) {
+            matchedPrices = [allMatchedPrices.pop()];
+          }
         } else {
           matchedPrices = prices.filter((p) => p.name === item.name);
         }
@@ -106,6 +113,17 @@ function priceItem(item: IPricedItem, prices: IExternalPrice[]) {
       case 9: {
         // relic
         matchedPrices = prices.filter((p) => p.name === item.name);
+        break;
+      }
+      case 11: {
+        // allflame-ember
+        // only match against the highest possible item.ilvl
+        const allMatchedPrices = prices
+          .filter((p) => p.name === item.name && p.ilvl !== undefined && p.ilvl <= item.ilvl)
+          .sort((a, b) => a.ilvl! - b.ilvl!);
+        if (allMatchedPrices.length >= 0) {
+          matchedPrices = [allMatchedPrices.pop()];
+        }
         break;
       }
       default: {

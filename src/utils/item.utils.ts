@@ -53,13 +53,19 @@ export function mapItemsToPricedItems(items: IItem[], tab?: IStashTab) {
     const mapTier =
       item.properties !== null && item.properties !== undefined ? getMapTier(item.properties) : 0;
     const blighted = item.typeLine.indexOf('Blighted ') > -1;
+    const necropolisCoffin = item.typeLine.indexOf('Filled Coffin') > -1;
+
+    let name =
+      mapTier && item.frameType !== 3
+        ? item.baseType
+        : getItemName(item.name, item.frameType !== 3 ? item.typeLine : undefined);
+
+    if (necropolisCoffin) name = item.implicitMods[0];
+
     const mappedItem = {
       uuid: uuidv4(),
       itemId: item.id,
-      name:
-        mapTier && item.frameType !== 3
-          ? item.baseType
-          : getItemName(item.name, item.frameType !== 3 ? item.typeLine : undefined),
+      name: name,
       typeLine: item.typeLine,
       frameType: item.frameType,
       calculated: 0,
@@ -67,6 +73,7 @@ export function mapItemsToPricedItems(items: IItem[], tab?: IStashTab) {
       elder: (item.elder !== undefined ? item.elder : false) || isElderMap(item.implicitMods),
       shaper: (item.shaper !== undefined ? item.shaper : false) || isShaperMap(item.implicitMods),
       blighted: blighted,
+      coffin: necropolisCoffin,
       icon: item.icon,
       ilvl:
         item.typeLine.indexOf(' Seed') > -1 && item.frameType === 5

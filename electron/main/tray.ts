@@ -18,10 +18,8 @@ let tray: Tray | null;
 
 const createTray = ({ mainWindow, updateAvailable, isQuittingCallback }: CreateTrayProps) => {
   checkForMissingWindow({ category: 'tray', mainWindow });
-  if(process.platform === SYSTEMS.MACOS) 
-    tray = new Tray(trayIconMacPath);
-  else
-    tray = new Tray(trayIconPath);
+  if (process.platform === SYSTEMS.MACOS) tray = new Tray(trayIconMacPath);
+  else tray = new Tray(trayIconPath);
 
   const contextMenu = Menu.buildFromTemplate([
     {
