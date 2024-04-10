@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.2.9] - 2024-04-07
+#### Hotfix
+- Coffins with no mods are now supported and dont break exilence...
+
 ## [1.2.8] - 2024-04-07
 #### Fixed
 - Necropolis Allflame-Embers & Coffins finally getting priced correctly after the poe.ninja API change

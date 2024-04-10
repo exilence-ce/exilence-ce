@@ -60,7 +60,7 @@ export function mapItemsToPricedItems(items: IItem[], tab?: IStashTab) {
         ? item.baseType
         : getItemName(item.name, item.frameType !== 3 ? item.typeLine : undefined);
 
-    if (necropolisCoffin) name = item.implicitMods[0];
+    if (necropolisCoffin && item.implicitMods.length > 0) name = item.implicitMods[0];
 
     const mappedItem = {
       uuid: uuidv4(),
