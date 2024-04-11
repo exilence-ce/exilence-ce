@@ -21,6 +21,9 @@ import { RootStore } from './rootStore';
 
 export type GroupDialogType = 'create' | 'join' | undefined;
 
+export type BaseSnapshotID = 'second-to-last' | string;
+export type HeadSnapshotID = 'latest' | string;
+
 const xbox: ISelectOption = {
   id: 'xbox',
   value: 'xbox',
@@ -88,6 +91,9 @@ export class UiStateStore {
   @observable loginError: string | undefined = undefined;
   @persist @observable chartTimeSpan: TimespanType = 'All time';
   @observable itemTableSelection: ItemTableSelectionType = 'latest';
+  @observable itemTableSnapshotHead: HeadSnapshotID = 'latest';
+  @observable itemTableSnapshotComparisonBase: BaseSnapshotID = 'second-to-last';
+  @observable itemTableSnapshotComparisonHead: HeadSnapshotID = 'latest';
   @observable customPriceDialogOpen: boolean = false;
   @observable selectedPricedItem: IPricedItem | undefined = undefined;
   @observable selectedPriceTableLeagueId: string | undefined = undefined;
@@ -171,6 +177,19 @@ export class UiStateStore {
     if (selection === 'comparison') {
       this.setShowItemTableFilter(false);
     }
+  }
+
+  @action
+  setItemTableSnapshotHead(id: HeadSnapshotID) {
+    this.itemTableSnapshotHead = id;
+  }
+  @action
+  setItemTableSnapshotComparisonHead(id: HeadSnapshotID) {
+    this.itemTableSnapshotComparisonHead = id;
+  }
+  @action
+  setItemTableSnapshotComparisonBase(id: BaseSnapshotID) {
+    this.itemTableSnapshotComparisonBase = id;
   }
 
   @action

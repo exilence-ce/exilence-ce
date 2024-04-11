@@ -33,6 +33,7 @@ import {
   diffSnapshots,
   filterItems,
   filterSnapshotItems,
+  findSnapshot,
   formatSnapshotsForChart,
   formatStashTabSnapshotsForChart,
   formatValue,
@@ -108,14 +109,34 @@ export class Profile {
       return [];
     }
     if (diffSelected) {
+      const baseSnapshot = findSnapshot(
+        this.snapshots,
+        rootStore.uiStateStore.itemTableSnapshotComparisonBase
+      );
+      const headSnapshot = findSnapshot(
+        this.snapshots,
+        rootStore.uiStateStore.itemTableSnapshotComparisonHead
+      );
+
+      if (!baseSnapshot || !headSnapshot) {
+        return [];
+      }
+
       return filterItems(
         diffSnapshots(
-          mapSnapshotToApiSnapshot(this.snapshots[1]),
-          mapSnapshotToApiSnapshot(this.snapshots[0])
+          mapSnapshotToApiSnapshot(baseSnapshot),
+          mapSnapshotToApiSnapshot(headSnapshot)
         )
       );
     }
-    return filterSnapshotItems([mapSnapshotToApiSnapshot(this.snapshots[0])]);
+
+    const snapshot = findSnapshot(this.snapshots, rootStore.uiStateStore.itemTableSnapshotHead);
+
+    if (!snapshot) {
+      return [];
+    }
+
+    return filterSnapshotItems([mapSnapshotToApiSnapshot(snapshot)]);
   }
 
   @computed
@@ -734,8 +755,9 @@ export class Profile {
       const apiSnapshot = mapSnapshotToApiSnapshot(snapshotToAdd, activeAccountLeague.stashtabList);
       const callback = () => {
         // keep items for only 10 snapshots at all times
-        if (this.snapshots.length > 10) {
-          this.snapshots[10].stashTabSnapshots.forEach((stss) => {
+        const maxSnapshotsWithItems = rootStore.settingStore.maxSnapshotsWithItems;
+        if (this.snapshots.length > maxSnapshotsWithItems) {
+          this.snapshots[maxSnapshotsWithItems].stashTabSnapshots.forEach((stss) => {
             stss.pricedItems = [];
           });
         }
