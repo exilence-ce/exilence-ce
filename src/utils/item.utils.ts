@@ -54,6 +54,7 @@ export function mapItemsToPricedItems(items: IItem[], tab?: IStashTab) {
       item.properties !== null && item.properties !== undefined ? getMapTier(item.properties) : 0;
     const blighted = item.typeLine.indexOf('Blighted ') > -1;
     const necropolisCoffin = item.typeLine.indexOf('Filled Coffin') > -1;
+    const beast = item.descrText === 'Right-click to add this to your bestiary.';
 
     let name =
       mapTier && item.frameType !== 3
@@ -75,6 +76,7 @@ export function mapItemsToPricedItems(items: IItem[], tab?: IStashTab) {
       shaper: (item.shaper !== undefined ? item.shaper : false) || isShaperMap(item.implicitMods),
       blighted: blighted,
       coffin: necropolisCoffin,
+      beast: beast,
       icon: item.icon,
       ilvl:
         item.typeLine.indexOf(' Seed') > -1 && item.frameType === 5
