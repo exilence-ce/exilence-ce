@@ -63,6 +63,7 @@ function getItemCategories() {
     'AllflameEmber',
     //'BaseType',
     //'HelmetEnchant',
+    'KalguuranRune',
   ];
   return categories;
 }
