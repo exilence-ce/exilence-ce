@@ -13,6 +13,7 @@ export interface IPricedItem {
   shaper: boolean;
   blighted: boolean;
   coffin: boolean;
+  beast: boolean;
   mean: number;
   median: number;
   min: number;

@@ -32,8 +32,10 @@ function priceItem(item: IPricedItem, prices: IExternalPrice[]) {
           item.frameType = 0;
           item.corrupted = false;
           matchedPrices = prices.filter((p) => p.name === item.name && p.tier === item.tier);
+        } else if (item.beast) {
+          matchedPrices = prices.filter((p) => p.name === item.typeLine);
         } else {
-          // other (e.g fragments, scrabs)
+          // other (e.g fragments, scarabs)
           matchedPrices = prices.filter((p) => p.name === item.name);
         }
         break;
