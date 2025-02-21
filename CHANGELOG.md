@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [1.2.11] - 2024-04-07
+## [1.2.11] - 2025-02-21
 #### Added
 - Added support for Beasts, new Map Variants & Kaluuran Runes (thank you Mrjamy <3)
 
