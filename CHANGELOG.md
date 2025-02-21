@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.2.11] - 2024-04-07
+#### Added
+- Added support for Beasts, new Map Variants & Kaluuran Runes (thank you Mrjamy <3)
+
+## [1.2.10] - 2024-04-07
+#### Hotfix
+- Coffins with no mods are now supported and dont break exilence...
+
 ## [1.2.9] - 2024-04-07
 #### Hotfix
 - Coffins with no mods are now supported and dont break exilence...
