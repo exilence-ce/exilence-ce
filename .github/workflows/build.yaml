@@ -31,7 +31,7 @@ jobs:
     - run: npm run smoke-build-win
     - uses: actions/upload-artifact@v4
       with:
-        name: exilence-ce
+        name: exilence-ce-win
         path: dist/Exilence*.exe
   # build-mac:
   #   runs-on: macos-latest
@@ -60,5 +60,5 @@ jobs:
     - run: npm run smoke-build-linux
     - uses: actions/upload-artifact@v4
       with:
-        name: exilence-ce
+        name: exilence-ce-linux
         path: dist/Exilence*.AppImage
