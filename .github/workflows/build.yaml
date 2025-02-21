@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: exilence-ce
     - name: Release
@@ -29,7 +29,7 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm run smoke-build-win
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: exilence-ce
         path: dist/Exilence*.exe
@@ -44,7 +44,7 @@ jobs:
   #   - run: npm ci
   #   - run: npm run smoke-build-mac
   #   - run: ls dist/
-  #   - uses: actions/upload-artifact@v3
+  #   - uses: actions/upload-artifact@v4
   #     with:
   #       name: exilence-ce
   #       path: dist/Exilence*.dmg
@@ -58,7 +58,7 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm run smoke-build-linux
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: exilence-ce
         path: dist/Exilence*.AppImage
