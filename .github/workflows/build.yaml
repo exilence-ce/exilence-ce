@@ -13,8 +13,6 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         merge-multiple: true
-    - name: Display Directory
-      run: ls -R $GITHUB_WORKSPACE
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
