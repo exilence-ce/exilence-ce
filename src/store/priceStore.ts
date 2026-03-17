@@ -204,7 +204,7 @@ export class PriceStore {
             }
             return forkJoin(
               // todo: add watch and other sources here
-              poeninjaService.getCurrencyPrices(league.id),
+              poeninjaService.getExchangePrices(league.id),
               poeninjaService.getItemPrices(league.id)
             ).pipe(
               map((prices) => {

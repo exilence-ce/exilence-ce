@@ -1,46 +1,55 @@
 import axios, { AxiosResponse } from 'axios';
-import { forkJoin, from } from 'rxjs';
+import { forkJoin, from, of } from 'rxjs';
 import RateLimiter from 'rxjs-ratelimiter';
-import { map } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { IExternalPrice } from '../interfaces/external-price.interface';
+import { IPoeNinjaExchangeOverview } from '../interfaces/poe-ninja/poe-ninja-exchange-overview.interface';
 import { IPoeNinjaItemOverview } from '../interfaces/poe-ninja/poe-ninja-item-overview.interface';
 import {
-  getExternalPriceFromNinjaCurrencyItem,
+  getExternalPriceFromNinjaExchangeItem,
   getExternalPriceFromNinjaItem,
 } from '../utils/price.utils';
-import { IPoeNinjaCurrencyOverview } from './../interfaces/poe-ninja/poe-ninja-currency-overview.interface';
 
 const rateLimiter = new RateLimiter(1, 1);
+const exchangeRateLimiter = new RateLimiter(1, 2);
 const apiUrl = 'https://poe.ninja/api/data';
+const exchangeApiUrl = 'https://poe.ninja/poe1/api/economy/exchange/current/overview';
 
 export const poeninjaService = {
-  getCurrencyCategories,
+  getExchangeCategories,
   getItemCategories,
   getItemCategoryOverview,
-  getCurrencyCategoryOverview,
+  getExchangeCategoryOverview,
   getItemPrices,
-  getCurrencyPrices,
+  getExchangePrices,
 };
 
-function getCurrencyCategories() {
-  const categories = ['Currency', 'Fragment'];
-  return categories;
+function getExchangeCategories() {
+  return [
+    'Currency',
+    'Fragment',
+    'Runegraft',
+    'AllflameEmber',
+    'Tattoo',
+    'Omen',
+    'DjinnCoin',
+    'DivinationCard',
+    'Oil',
+    'Artifact',
+    'Scarab',
+    'DeliriumOrb',
+    'Essence',
+    'Resonator',
+    'Fossil',
+  ];
 }
 
 function getItemCategories() {
   // commented categories are mostly in accuracy pricing
   const categories = [
-    'Oil',
     'Incubator',
-    'Scarab',
-    'Fossil',
-    'Resonator',
-    'Essence',
-    'DivinationCard',
     //'Prophecy',
     'SkillGem',
-    'Tattoo',
-    'Omen',
     'UniqueMap',
     'Map',
     'UniqueJewel',
@@ -50,20 +59,16 @@ function getItemCategories() {
     'UniqueRelic',
     //'Watchstone',
     'UniqueAccessory',
-    'DeliriumOrb',
     'Beast',
     'Vial',
     'Invitation',
-    'Artifact',
     'Memory',
     //'ClusterJewel',
     'BlightedMap',
     'BlightRavagedMap',
     'Coffin',
-    'AllflameEmber',
     //'BaseType',
     //'HelmetEnchant',
-    'KalguuranRune',
   ];
   return categories;
 }
@@ -75,10 +80,10 @@ function getItemCategoryOverview(league: string, type: string) {
   );
 }
 
-function getCurrencyCategoryOverview(league: string, type: string) {
+function getExchangeCategoryOverview(league: string, type: string) {
   const parameters = `?league=${league}&type=${type}`;
-  return rateLimiter.limit(
-    from(axios.get<IPoeNinjaCurrencyOverview>(`${apiUrl}/currencyoverview${parameters}`))
+  return exchangeRateLimiter.limit(
+    from(axios.get<IPoeNinjaExchangeOverview>(`${exchangeApiUrl}${parameters}`))
   );
 }
 
@@ -100,27 +105,27 @@ function getItemPrices(league: string) {
   ).pipe(map((arrays) => arrays.reduce((acc, array) => [...acc, ...array], [])));
 }
 
-function getCurrencyPrices(league: string) {
+function getExchangePrices(league: string) {
   return forkJoin(
-    getCurrencyCategories().map((type) => {
-      return getCurrencyCategoryOverview(league, type).pipe(
-        map((response: AxiosResponse<IPoeNinjaCurrencyOverview>) => {
-          if (response.data) {
-            return response.data.lines.map((lines) => {
-              const currencyDetail = response.data.currencyDetails.find(
-                (detail) => detail.name === lines.currencyTypeName
-              );
-              return getExternalPriceFromNinjaCurrencyItem(
-                lines,
-                currencyDetail,
+    getExchangeCategories().map((type) => {
+      return getExchangeCategoryOverview(league, type).pipe(
+        map((response: AxiosResponse<IPoeNinjaExchangeOverview>) => {
+          if (response.data && response.data.lines) {
+            const itemMap = new Map(response.data.items.map((i) => [i.id, i]));
+            return response.data.lines.map((line) => {
+              const item = itemMap.get(line.id);
+              return getExternalPriceFromNinjaExchangeItem(
+                line,
+                item,
                 type,
                 league
               ) as IExternalPrice;
             });
           } else {
-            return []; // no prices found on ninja
+            return [];
           }
-        })
+        }),
+        catchError(() => of([] as IExternalPrice[]))
       );
     })
   ).pipe(map((arrays) => arrays.reduce((acc, array) => [...acc, ...array], [])));

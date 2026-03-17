@@ -1,7 +1,9 @@
 import { rootStore } from '..';
 import { IExternalPrice } from '../interfaces/external-price.interface';
-import { IPoeNinjaCurrencyOverviewCurrencyDetail } from '../interfaces/poe-ninja/poe-ninja-currency-overview-currency-detail.interface';
-import { IPoeNinjaCurrencyOverviewLine } from '../interfaces/poe-ninja/poe-ninja-currency-overview-line.interface';
+import {
+  IPoeNinjaExchangeOverviewItem,
+  IPoeNinjaExchangeOverviewLine,
+} from '../interfaces/poe-ninja/poe-ninja-exchange-overview.interface';
 import { IPoeNinjaItemOverviewLine } from '../interfaces/poe-ninja/poe-ninja-item-overview-line.interface';
 import { IPoeWatchCombinedPriceItemData } from '../interfaces/poe-watch/poe-watch-combined-price-item-data.interface';
 import { IPricedItem } from '../interfaces/priced-item.interface';
@@ -78,27 +80,28 @@ export function formatSparklineChartData(data: number[]): ISparklineDataPoint[] 
   });
 }
 
-export function getExternalPriceFromNinjaCurrencyItem(
-  item: IPoeNinjaCurrencyOverviewLine,
-  details: IPoeNinjaCurrencyOverviewCurrencyDetail | undefined,
+export function getExternalPriceFromNinjaExchangeItem(
+  line: IPoeNinjaExchangeOverviewLine,
+  item: IPoeNinjaExchangeOverviewItem | undefined,
   type: string,
   league: string
 ) {
   const detailsUrl = `${AppConfig.poeNinjaBaseUrl}/${getNinjaLeagueUrl(
     league.toLowerCase()
-  )}/${getNinjaTypeUrl(type)}/${item.detailsId}`;
-  const calculated = item.receive ? item.receive.value : 0;
-  const sparkLine = item.receiveSparkLine ? item.receiveSparkLine : undefined;
+  )}/${getNinjaTypeUrl(type)}/${line.id}`;
+
+  const frameTypeMap: Record<string, number> = {
+    DivinationCard: 6,
+    AllflameEmber: 11,
+  };
 
   return {
-    name: item.currencyTypeName,
-    calculated: calculated,
-    icon: details !== undefined ? details.icon : undefined,
-    count: item.receive ? item.receive.count : 0,
-    frameType: 5,
-    detailsUrl: detailsUrl,
-    sparkLine:
-      item.receive && item.receive.count > 10 ? sparkLine : item.lowConfidenceReceiveSparkLine,
+    name: item?.name ?? line.id,
+    calculated: line.primaryValue ?? 0,
+    icon: item?.image ? `https://web.poecdn.com${item.image}` : '',
+    count: 99,
+    frameType: frameTypeMap[type] ?? 5,
+    detailsUrl,
   } as IExternalPrice;
 }
 

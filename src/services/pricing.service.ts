@@ -101,7 +101,7 @@ function priceItem(item: IPricedItem, prices: IExternalPrice[]) {
       case 6: {
         // divination card
         matchedPrices = prices.filter(
-          (p) => p.name === item.name && p.icon.indexOf('Inventory') > -1
+          (p) => p.name === item.name && (!p.icon || p.icon.indexOf('Inventory') > -1)
         );
         break;
       }

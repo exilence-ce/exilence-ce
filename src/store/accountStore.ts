@@ -243,10 +243,12 @@ export class AccountStore {
                 leagues.concat(getCharacterLeagues(characters)).map((l) => l.id)
               );
 
-              // at initial launch, fetch prices for all leagues
-              this.rootStore.priceStore.getPricesForLeagues(
-                this.rootStore.leagueStore.priceLeagues.map((l) => l.id)
-              );
+              // at initial launch, fetch prices for active league only
+              const activePriceLeagueId = this.getSelectedAccount?.activePriceLeague?.id
+                ?? this.rootStore.leagueStore.priceLeagues[0]?.id;
+              if (activePriceLeagueId) {
+                this.rootStore.priceStore.getPricesForLeagues([activePriceLeagueId]);
+              }
 
               return forkJoin(
                 of(account.accountLeagues).pipe(
