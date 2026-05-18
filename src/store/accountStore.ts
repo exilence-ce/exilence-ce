@@ -28,6 +28,7 @@ export class AccountStore {
   @observable authState: string = uuidv4();
 
   cancelledRetry: Subject<boolean> = new Subject();
+  initSessionRetryQueued: boolean = false;
 
   constructor(private rootStore: RootStore) {
     makeObservable(this);
@@ -66,6 +67,7 @@ export class AccountStore {
 
   @action
   cancelRetries() {
+    this.initSessionRetryQueued = false;
     this.cancelledRetry.next(true);
   }
 
@@ -310,6 +312,7 @@ export class AccountStore {
 
   @action
   initSessionSuccess() {
+    this.initSessionRetryQueued = false;
     this.rootStore.uiStateStore.resetStatusMessage();
     this.rootStore.notificationStore.createNotification('init_session', 'success');
     this.rootStore.uiStateStore.setIsInitiating(false);
@@ -322,10 +325,14 @@ export class AccountStore {
 
   @action
   initSessionFail(e: AxiosError | Error) {
-    if (this.rootStore.routeStore.redirectedTo !== '/login') {
+    if (this.rootStore.routeStore.redirectedTo !== '/login' && !this.initSessionRetryQueued) {
+      this.initSessionRetryQueued = true;
       fromStream(
         timer(45 * 1000).pipe(
-          switchMap(() => of(this.initSession())),
+          switchMap(() => {
+            this.initSessionRetryQueued = false;
+            return of(this.initSession());
+          }),
           takeUntil(this.cancelledRetry)
         )
       );

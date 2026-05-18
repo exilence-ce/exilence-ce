@@ -46,7 +46,15 @@ export class RateLimitStore {
 
   @action
   setRetryAfter(seconds: number) {
-    this.retryAfter = seconds === 0 ? 0 : new Date().setSeconds(new Date().getSeconds() + seconds);
+    this.retryAfter = seconds > 0 ? Date.now() + seconds * 1000 : 0;
+  }
+
+  getRetryAfterMillisecondsRemaining() {
+    return Math.max(this.retryAfter - Date.now(), 0);
+  }
+
+  isRetryAfterActive() {
+    return this.getRetryAfterMillisecondsRemaining() > 0;
   }
 
   @action
