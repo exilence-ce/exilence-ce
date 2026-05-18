@@ -95,11 +95,7 @@ export function mapItemsToPricedItems(items: IItem[], tab?: IStashTab) {
         item.properties !== null && item.properties !== undefined ? getLevel(item.properties) : 0,
       stackSize: item.stackSize || 1,
       totalStacksize: item.maxStackSize || 1,
-      variant: getItemVariant(
-        item.sockets,
-        item.explicitMods,
-        getItemName(item.name, item.typeLine)
-      ),
+      variant: getItemVariant(item.sockets, item.explicitMods, name),
       tab: tab
         ? [
             {
@@ -235,55 +231,69 @@ export function isShaperMap(implicitMods: string[]): boolean {
   return false;
 }
 
-export function getItemVariant(sockets: ISocket[], explicitMods: string[], name: string): string {
-  if (explicitMods) {
-    const watchStoneUsesMod = explicitMods.find((em) => em.includes('uses remaining'));
-    if (watchStoneUsesMod) {
-      return watchStoneUsesMod.split(' ')[0];
+export function getItemVariant(
+  sockets: ISocket[] | undefined,
+  explicitMods: string[] | undefined,
+  name: string
+): string {
+  const mods = explicitMods ?? [];
+  const itemSockets = sockets ?? [];
+
+  const watchStoneUsesMod = mods.find((em) => em.includes('uses remaining'));
+  if (watchStoneUsesMod) {
+    return watchStoneUsesMod.split(' ')[0];
+  }
+
+  if (name === 'Voices') {
+    const passiveMod = mods.find((em) => em.includes('Adds') && em.includes('Passive Skill'));
+    const passiveCount = passiveMod?.match(/Adds (\d+) Passive Skills?/);
+    if (passiveCount) {
+      return `${passiveCount[1]} Passive${passiveCount[1] === '1' ? '' : 's'}`;
+    }
+  }
+
+  if (name === "Yriel's Fostering") {
+    if (mods.some((s) => s.includes('Bestial Rhoa'))) {
+      return 'Rhoa';
+    }
+    if (mods.some((s) => s.includes('Bestial Ursa'))) {
+      return 'Ursa';
+    }
+    if (mods.some((s) => s.includes('Bestial Snake'))) {
+      return 'Snake';
     }
   }
 
   if (name === 'Impresence') {
-    if (explicitMods.filter((s) => s.includes('Lightning Damage'))) {
+    if (mods.some((s) => s.includes('Lightning Damage'))) {
       return 'Lightning';
     }
-    if (explicitMods.filter((s) => s.includes('Fire Damage'))) {
+    if (mods.some((s) => s.includes('Fire Damage'))) {
       return 'Fire';
     }
-    if (explicitMods.filter((s) => s.includes('Cold Damage'))) {
+    if (mods.some((s) => s.includes('Cold Damage'))) {
       return 'Cold';
     }
-    if (explicitMods.filter((s) => s.includes('Physical Damage'))) {
+    if (mods.some((s) => s.includes('Physical Damage'))) {
       return 'Physical';
     }
-    if (explicitMods.filter((s) => s.includes('Chaos Damage'))) {
+    if (mods.some((s) => s.includes('Chaos Damage'))) {
       return 'Chaos';
     }
   }
 
-  // Abyssal
-  if (name === 'Lightpoacher') {
-    const count = sockets.filter((x) => x.sColour === 'A' || x.sColour === 'a').length;
-    return count === 1 ? count + ' Jewel' : count + ' Jewels';
-  }
-  if (name === 'Shroud of the Lightless') {
-    const count = sockets.filter((x) => x.sColour === 'A' || x.sColour === 'a').length;
-    return count === 1 ? count + ' Jewel' : count + ' Jewels';
-  }
-  if (name === 'Bubonic Trail') {
-    const count = sockets.filter((x) => x.sColour === 'A' || x.sColour === 'a').length;
-    return count === 1 ? count + ' Jewel' : count + ' Jewels';
-  }
-  if (name === 'Tombfist') {
-    const count = sockets.filter((x) => x.sColour === 'A' || x.sColour === 'a').length;
-    return count === 1 ? count + ' Jewel' : count + ' Jewels';
-  }
-  if (name === 'Hale Negator') {
-    const count = sockets.filter((x) => x.sColour === 'A' || x.sColour === 'a').length;
-    return count === 1 ? count + ' Jewel' : count + ' Jewels';
-  }
-  if (name === 'Command of the Pit') {
-    const count = sockets.filter((x) => x.sColour === 'A' || x.sColour === 'a').length;
+  // Abyssal uniques are listed by abyssal socket count on poe.ninja.
+  if (
+    [
+      'Lightpoacher',
+      'Shroud of the Lightless',
+      'Bubonic Trail',
+      'Tombfist',
+      'Hale Negator',
+      'Command of the Pit',
+    ].includes(name)
+  ) {
+    const count = itemSockets.filter((x) => x.sColour === 'A' || x.sColour === 'a').length;
     return count === 1 ? count + ' Jewel' : count + ' Jewels';
   }
 
