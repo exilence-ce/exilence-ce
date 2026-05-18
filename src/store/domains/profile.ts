@@ -84,7 +84,7 @@ export class Profile {
       rootStore.uiStateStore.initiated &&
       !rootStore.uiStateStore.isSnapshotting &&
       this.hasPricesForActiveLeague &&
-      rootStore.rateLimitStore.retryAfter === 0
+      !rootStore.rateLimitStore.isRetryAfterActive()
     );
   }
 

@@ -28,6 +28,7 @@ export class Account implements IAccount {
   @persist('list', Profile) @observable profiles: Profile[] = [new Profile({ name: 'profile 1' })];
 
   cancelled: Subject<boolean> = new Subject();
+  snapshotQueued: boolean = false;
 
   constructor(obj?: IAccount) {
     makeObservable(this);
@@ -86,9 +87,14 @@ export class Account implements IAccount {
 
   @action
   queueSnapshot(milliseconds?: number) {
+    if (this.snapshotQueued) {
+      return;
+    }
+    this.snapshotQueued = true;
     fromStream(
       timer(milliseconds ? milliseconds : rootStore.settingStore.autoSnapshotInterval).pipe(
         map(() => {
+          this.snapshotQueued = false;
           if (this.activeProfile && this.activeProfile.readyToSnapshot) {
             this.activeProfile.snapshot();
           } else {
@@ -103,6 +109,7 @@ export class Account implements IAccount {
 
   @action
   dequeueSnapshot() {
+    this.snapshotQueued = false;
     this.cancelled.next(true);
   }
 

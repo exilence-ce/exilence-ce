@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+#### Fixed
+- Prevented expired `Retry-After` cooldowns and repeated session failures from leaving snapshot/session retry loops stuck or duplicated.
+
 ## [1.2.11] - 2025-02-21
 #### Added
 - Added support for Beasts, new Map Variants & Kaluuran Runes (thank you Mrjamy <3)
