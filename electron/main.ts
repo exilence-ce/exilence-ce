@@ -3,6 +3,8 @@ import * as path from 'path';
 import * as isDev from 'electron-is-dev';
 import * as sentry from '@sentry/electron';
 import * as windowStateKeeper from 'electron-window-state';
+import { getAuthCallbackPayload } from '../src/utils/auth-callback.utils';
+import { sanitizeSentryEvent } from '../src/utils/sentry.utils';
 
 import {
   createFlashFrame,
@@ -32,6 +34,7 @@ import { SYSTEMS } from './enums';
 if (!isDev) {
   sentry.init({
     dsn: 'https://cefd9ca960954f39870e162aa8936535@o222604.ingest.sentry.io/6011593',
+    beforeSend: sanitizeSentryEvent,
     ignoreErrors: [
       'Request failed',
       'net::',
@@ -51,7 +54,7 @@ if (!isDev) {
 const gotTheLock = app.requestSingleInstanceLock();
 let isQuitting: boolean;
 let updateAvailable: boolean;
-let deeplinkingUrl: any;
+let deeplinkingUrl: string | string[];
 let trayProps: CreateTrayProps;
 
 /**
@@ -235,10 +238,10 @@ if (!gotTheLock) {
       if (process.platform !== SYSTEMS.MACOS) {
         // Keep only command line / deep linked arguments
         deeplinkingUrl = argv.slice(1);
-        const raw_code = /code=([^&]*)/.exec(deeplinkingUrl) || null;
-        const code = raw_code && raw_code.length > 1 ? raw_code[1] : null;
-        const error = /\?error=(.+)$/.exec(deeplinkingUrl);
-        browserWindows[MAIN_BROWSER_WINDOW].webContents.send('auth-callback', { code, error });
+        browserWindows[MAIN_BROWSER_WINDOW].webContents.send(
+          'auth-callback',
+          getAuthCallbackPayload(deeplinkingUrl)
+        );
       }
 
       if (browserWindows[MAIN_BROWSER_WINDOW].isMinimized()) {
@@ -266,10 +269,10 @@ if (!gotTheLock) {
   app.on('open-url', function (event, data) {
     event.preventDefault();
     deeplinkingUrl = data;
-    const raw_code = /code=([^&]*)/.exec(deeplinkingUrl) || null;
-    const code = raw_code && raw_code.length > 1 ? raw_code[1] : null;
-    const error = /\?error=(.+)$/.exec(deeplinkingUrl);
-    browserWindows[MAIN_BROWSER_WINDOW].webContents.send('auth-callback', { code, error });
+    browserWindows[MAIN_BROWSER_WINDOW].webContents.send(
+      'auth-callback',
+      getAuthCallbackPayload(deeplinkingUrl)
+    );
   });
 
   app.on('before-quit', () => {

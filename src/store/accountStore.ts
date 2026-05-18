@@ -31,8 +31,8 @@ export class AccountStore {
 
   constructor(private rootStore: RootStore) {
     makeObservable(this);
-    electronService.ipcRenderer.on('auth-callback', (_event, { code, error }) => {
-      this.handleAuthCallback(code, error);
+    electronService.ipcRenderer.on('auth-callback', (_event, { code, error, state }) => {
+      this.handleAuthCallback(code, error, state);
     });
 
     autorun(() => {
@@ -100,7 +100,12 @@ export class AccountStore {
   }
 
   @action
-  handleAuthCallback(code: string, error: string) {
+  handleAuthCallback(code: string, error: string, state?: string) {
+    if (state !== this.authState) {
+      this.loginWithOAuthFail(new Error('error:invalid_auth_state'));
+      return;
+    }
+
     // If there is a code, proceed to get token
     if (code) {
       this.setCode(code);
@@ -117,6 +122,7 @@ export class AccountStore {
 
   @action
   loadOAuthPage() {
+    this.authState = uuidv4();
     openCustomLink(this.authUrl);
   }
 
@@ -172,7 +178,7 @@ export class AccountStore {
   }
 
   @action
-  loginWithOAuthFail(e?: AxiosError) {
+  loginWithOAuthFail(e?: AxiosError | Error) {
     this.rootStore.notificationStore.createNotification('login_with_oauth', 'error', true, e);
     this.rootStore.routeStore.redirect('/login');
   }

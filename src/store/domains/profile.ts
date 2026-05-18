@@ -41,7 +41,7 @@ import {
   getValueForSnapshotsTabs,
   mapSnapshotToApiSnapshot,
 } from '../../utils/snapshot.utils';
-import { rootStore, visitor } from './../../index';
+import { rootStore } from './../../index';
 import { externalService } from './../../services/external.service';
 import { Snapshot } from './snapshot';
 import { StashTabSnapshot } from './stashtab-snapshot';
@@ -329,8 +329,6 @@ export class Profile {
 
   @action
   updateProfile(profile: IProfile, callback: () => void) {
-    visitor!.event('Profile', 'Edit profile').send();
-
     const apiProfile = mapProfileToApiProfile(
       new Profile(profile),
       rootStore.settingStore.activeCurrency
@@ -367,8 +365,6 @@ export class Profile {
   }
 
   @action snapshot() {
-    visitor!.event('Profile', 'Triggered snapshot').send();
-
     rootStore.uiStateStore!.setIsSnapshotting(true);
     this.refreshStashTabs();
   }

@@ -12,7 +12,7 @@ import { ICharacter } from '../../interfaces/character.interface';
 import { authService } from '../../services/auth.service';
 import { mapProfileToApiProfile } from '../../utils/profile.utils';
 import { genericRetryStrategy } from '../../utils/rxjs.utils';
-import { rootStore, visitor } from './../../index';
+import { rootStore } from './../../index';
 import { IProfile } from './../../interfaces/profile.interface';
 import { AccountLeague } from './account-league';
 import { Profile } from './profile';
@@ -285,8 +285,6 @@ export class Account implements IAccount {
   @action
   removeActiveProfile() {
     rootStore.uiStateStore.setRemovingProfile(true);
-    visitor!.event('Profile', 'Remove profile').send();
-
     const profileIndex = this.profiles.findIndex((p) => p.active);
     const newActiveProfile = this.profiles.find((p) => !p.active);
 

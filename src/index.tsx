@@ -15,7 +15,6 @@ import React, { Suspense, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { HashRouter as Router, Redirect, Route } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.min.css';
-import ua, { Visitor } from 'universal-analytics';
 import './assets/styles/reactour.scss';
 import exilenceTheme from './assets/themes/exilence-theme';
 import AnnouncementDialogContainer from './components/announcement-dialog/AnnouncementDialogContainer';
@@ -28,7 +27,6 @@ import Notifier from './components/notifier/Notifier';
 import ReactionContainer from './components/reaction-container/ReactionContainer';
 import ToastWrapper from './components/toast-wrapper/ToastWrapper';
 import ToolbarContainer from './components/toolbar/ToolbarContainer';
-import AppConfig from './config/app.config';
 import configureAxios from './config/axios';
 import configureI18n from './config/i18n';
 import initSentry from './config/sentry';
@@ -46,7 +44,6 @@ declare module '@mui/styles/defaultTheme' {
 }
 
 export const appName = 'Exilence CE';
-export let visitor: Visitor | undefined = undefined;
 initSentry();
 configureI18n();
 configureAxios();
@@ -169,7 +166,6 @@ const renderApp = () => {
           }
         }
       }
-      visitor = ua(AppConfig.trackingId, rootStore.uiStateStore.userId);
       ReactDOM.render(<App />, document.getElementById('root'));
     })
     .catch((err: Error) => {

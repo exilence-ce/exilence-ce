@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+#### Fixed
+- Removed Google Analytics page/action tracking, scrubbed auth secrets from Sentry events, and validated OAuth callback state before exchanging authorization codes.
+
 ## [1.2.11] - 2025-02-21
 #### Added
 - Added support for Beasts, new Map Variants & Kaluuran Runes (thank you Mrjamy <3)
