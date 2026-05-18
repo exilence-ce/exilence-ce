@@ -579,12 +579,16 @@ export class Profile {
             let includedCharacterItems: IPricedItem[] = [];
             if (this.includeInventory) {
               const inventory = characterWithItems?.data?.character.inventory;
-              const mappedInventory = inventory ? mapItemsToPricedItems(inventory) : [];
+              const mappedInventory = inventory
+                ? mapItemsToPricedItems(inventory, undefined, 'Character inventory')
+                : [];
               includedCharacterItems = includedCharacterItems.concat(mappedInventory);
             }
             if (this.includeEquipment) {
               const equipment = characterWithItems?.data?.character.equipment;
-              const mappedEquipment = equipment ? mapItemsToPricedItems(equipment) : [];
+              const mappedEquipment = equipment
+                ? mapItemsToPricedItems(equipment, undefined, 'Character equipment')
+                : [];
               includedCharacterItems = includedCharacterItems.concat(mappedEquipment);
             }
             const characterTab: IStashTabSnapshot = {

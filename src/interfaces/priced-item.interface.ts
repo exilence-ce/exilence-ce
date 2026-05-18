@@ -30,6 +30,13 @@ export interface IPricedItem {
   variant: string;
   tier: number;
   inventoryId: string;
+  x?: number;
+  y?: number;
+  source?: string;
+  tabId?: string;
+  tabName?: string;
+  tabIndex?: number;
+  tabColor?: string;
   tab: ICompactTab[];
   detailsUrl?: string;
 }

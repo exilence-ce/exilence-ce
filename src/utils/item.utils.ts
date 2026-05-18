@@ -48,7 +48,7 @@ export function parseTabNames(tabs: ICompactTab[]) {
   return tabs.map((t) => t.name).join(', ');
 }
 
-export function mapItemsToPricedItems(items: IItem[], tab?: IStashTab) {
+export function mapItemsToPricedItems(items: IItem[], tab?: IStashTab, source?: string) {
   return items.map((item: IItem) => {
     const mapTier =
       item.properties !== null && item.properties !== undefined ? getMapTier(item.properties) : 0;
@@ -72,6 +72,13 @@ export function mapItemsToPricedItems(items: IItem[], tab?: IStashTab) {
       frameType: item.frameType,
       calculated: 0,
       inventoryId: item.inventoryId,
+      x: item.x,
+      y: item.y,
+      source: source ?? (tab ? 'Stash tab' : item.inventoryId),
+      tabId: tab?.id,
+      tabName: tab?.name,
+      tabIndex: tab?.index,
+      tabColor: tab?.metadata.colour,
       elder: (item.elder !== undefined ? item.elder : false) || isElderMap(item.implicitMods),
       shaper: (item.shaper !== undefined ? item.shaper : false) || isShaperMap(item.implicitMods),
       blighted: blighted,
