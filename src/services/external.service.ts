@@ -9,6 +9,7 @@ import { IGithubRelease } from '../interfaces/github/github-release.interface';
 import { ILeague } from '../interfaces/league.interface';
 import { IPoeProfile } from '../interfaces/poe-profile.interface';
 import { IStash, IStashTab, IStashTabResponse } from '../interfaces/stash.interface';
+import { getRequestedStashTab, getStashTabRequestId } from '../utils/stash-tab.utils';
 import AppConfig from './../config/app.config';
 const apiUrl = AppConfig.pathOfExileApiUrl;
 
@@ -54,8 +55,7 @@ function getStashTabWithChildren(
   let innerLimiter;
   let outerLimiter;
   const makeRequest = (tab: IStashTab) => {
-    const prefix = tab.parent && children ? `${tab.parent}/` : '';
-    return getStashTab(league, `${prefix}${tab.id}`).pipe(
+    return getStashTab(league, getStashTabRequestId(tab)).pipe(
       map((stashTab: AxiosResponse<IStashTabResponse>) => {
         if (!children) {
           rootStore.uiStateStore.incrementStatusMessageCount();
@@ -81,7 +81,7 @@ function getStashTabWithChildren(
         rootStore.rateLimitStore.setLastRequestTimestamp(new Date());
         rootStore.rateLimitStore.setLastRateLimitState(state);
         rootStore.rateLimitStore.setLastRateLimitBoundaries(limits);
-        return { stash: stashTab.data.stash, limits, state };
+        return { stash: getRequestedStashTab(stashTab.data.stash, tab), limits, state };
       }),
       delay(125)
     );
