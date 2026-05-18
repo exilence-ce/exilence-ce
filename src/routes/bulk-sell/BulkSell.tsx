@@ -4,7 +4,7 @@ import { Skeleton } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { appName, useStores, visitor } from '../..';
+import { useStores } from '../..';
 import {
   Accordion,
   AccordionDetails,
@@ -35,7 +35,6 @@ const BulkSell = () => {
     if (!uiStateStore!.validated && !uiStateStore!.initiated && !uiStateStore!.isValidating) {
       accountStore!.validateSession('/bulk-sell');
     }
-    visitor!.pageview('/bulk-sell', appName).send();
     uiStateStore!.setBulkSellView(true);
   }, []);
 

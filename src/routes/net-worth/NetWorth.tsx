@@ -8,7 +8,7 @@ import { Box, Grid, Skeleton, Tooltip, Typography, useTheme } from '@mui/materia
 import { observer } from 'mobx-react-lite';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { appName, useStores, visitor } from '../..';
+import { useStores } from '../..';
 import { primaryLighter, rarityColors } from '../../assets/themes/exilence-theme';
 import ChartToolboxContainer from '../../components/chart-toolbox/ChartToolboxContainer';
 import {
@@ -93,7 +93,6 @@ const NetWorth = () => {
       accountStore!.validateSession('/net-worth');
     }
 
-    visitor!.pageview('/net-worth', appName).send();
     uiStateStore!.setBulkSellView(false);
   }, []);
 

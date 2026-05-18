@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import makeStyles from '@mui/styles/makeStyles';
 import { observer } from 'mobx-react-lite';
 
-import { appName, visitor } from '../..';
 import Image from '../../assets/img/scourge-bg.jpg';
 import LoginContentContainer from '../../components/login-content/LoginContentContainer';
 
@@ -16,10 +15,6 @@ const useStyles = makeStyles(() => ({
 }));
 
 const Login = () => {
-  useEffect(() => {
-    visitor!.pageview('/login', appName).send();
-  });
-
   const classes = useStyles();
   return (
     <div className={classes.loginWrapper}>

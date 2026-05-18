@@ -1,7 +1,7 @@
 import { Grid } from '@mui/material';
 import { observer } from 'mobx-react-lite';
 import React, { useEffect } from 'react';
-import { appName, useStores, visitor } from '../..';
+import { useStores } from '../..';
 import FeatureWrapper from '../../components/feature-wrapper/FeatureWrapper';
 import SettingsTabs from '../../components/settings-tabs/SettingsTabs';
 
@@ -11,7 +11,6 @@ const Settings = () => {
     if (!uiStateStore!.validated && !uiStateStore!.initiated && !uiStateStore!.isValidating) {
       accountStore!.validateSession('/settings');
     }
-    visitor!.pageview('/settings', appName).send();
   }, []);
 
   return (
