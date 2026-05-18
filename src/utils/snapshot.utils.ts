@@ -21,12 +21,12 @@ export const mapSnapshotToApiSnapshot = (snapshot: Snapshot, stashTabs?: IStashT
           const foundTab = filteredLeagueTabs?.find((lt) => lt.id === st.stashTabId);
           return {
             uuid: st.uuid,
-            stashTabId: foundTab?.id,
+            stashTabId: foundTab?.id ?? st.stashTabId,
             pricedItems: st.pricedItems,
             index: foundTab?.index,
             value: st.value,
             color: foundTab ? foundTab.metadata.colour : undefined,
-            name: foundTab?.name,
+            name: foundTab?.name ?? st.stashTabId,
           } as IApiStashTabSnapshot;
         })
       : snapshot.stashTabSnapshots,
