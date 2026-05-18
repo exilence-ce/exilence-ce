@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+#### Fixed
+- Improved unique item variant/link matching so unlinked uniques and variant-specific uniques are less likely to disappear from snapshots.
+- Made poe.ninja price category refreshes tolerate one missing or failing category without discarding all other prices.
+
 ## [1.2.11] - 2025-02-21
 #### Added
 - Added support for Beasts, new Map Variants & Kaluuran Runes (thank you Mrjamy <3)

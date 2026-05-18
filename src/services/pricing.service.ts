@@ -1,6 +1,7 @@
 import { IExternalPrice } from '../interfaces/external-price.interface';
 import { IPricedItem } from '../interfaces/priced-item.interface';
 import { isSpecialGem } from '../utils/item.utils';
+import { pickBestUniquePrice } from '../utils/price-match.utils';
 import { mapPriceToItem } from '../utils/price.utils';
 
 export const pricingService = {
@@ -41,25 +42,7 @@ function priceItem(item: IPricedItem, prices: IExternalPrice[]) {
         break;
       case 3: {
         // unique
-        const itemPrices = prices.filter(
-          (p) =>
-            p.name === item.name &&
-            ((item.links < 5 && p.links !== undefined && p.links < 5) || p.links === item.links) &&
-            p.frameType === 3 &&
-            (p.variant === item.variant ||
-              p.variant === undefined ||
-              p.variant === '' ||
-              p.variant === null)
-        );
-
-        const qualityPrices = itemPrices.filter((ip) => !ip.quality || ip.quality === item.quality);
-
-        if (qualityPrices.length === 1) {
-          price = qualityPrices[0];
-        } else {
-          matchedPrices = itemPrices.filter((ip) => ip.quality === 0);
-        }
-
+        price = pickBestUniquePrice(item, prices);
         break;
       }
       case 4: {
@@ -91,8 +74,8 @@ function priceItem(item: IPricedItem, prices: IExternalPrice[]) {
           const allMatchedPrices = prices
             .filter((p) => p.name === item.name)
             .sort((a, b) => a.ilvl! - b.ilvl!);
-          if (allMatchedPrices.length >= 0) {
-            matchedPrices = [allMatchedPrices.pop()];
+          if (allMatchedPrices.length > 0) {
+            matchedPrices = [allMatchedPrices.pop()!];
           }
         } else {
           matchedPrices = prices.filter((p) => p.name === item.name);
@@ -123,8 +106,8 @@ function priceItem(item: IPricedItem, prices: IExternalPrice[]) {
         const allMatchedPrices = prices
           .filter((p) => p.name === item.name && p.ilvl !== undefined && p.ilvl <= item.ilvl)
           .sort((a, b) => a.ilvl! - b.ilvl!);
-        if (allMatchedPrices.length >= 0) {
-          matchedPrices = [allMatchedPrices.pop()];
+        if (allMatchedPrices.length > 0) {
+          matchedPrices = [allMatchedPrices.pop()!];
         }
         break;
       }

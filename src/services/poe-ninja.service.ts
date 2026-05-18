@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
-import { forkJoin, from } from 'rxjs';
+import { forkJoin, from, of } from 'rxjs';
 import RateLimiter from 'rxjs-ratelimiter';
-import { map } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { IExternalPrice } from '../interfaces/external-price.interface';
 import { IPoeNinjaItemOverview } from '../interfaces/poe-ninja/poe-ninja-item-overview.interface';
 import {
@@ -94,7 +94,8 @@ function getItemPrices(league: string) {
           } else {
             return []; // no prices found on ninja
           }
-        })
+        }),
+        catchError(() => of([] as IExternalPrice[]))
       );
     })
   ).pipe(map((arrays) => arrays.reduce((acc, array) => [...acc, ...array], [])));
@@ -120,7 +121,8 @@ function getCurrencyPrices(league: string) {
           } else {
             return []; // no prices found on ninja
           }
-        })
+        }),
+        catchError(() => of([] as IExternalPrice[]))
       );
     })
   ).pipe(map((arrays) => arrays.reduce((acc, array) => [...acc, ...array], [])));
