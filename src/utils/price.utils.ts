@@ -186,7 +186,7 @@ export function mapApiPricedItemToPricedItem(item: IPricedItem) {
 }
 
 export function excludeLegacyMaps(prices: IExternalPrice[]) {
-  const acceptedMaps = [', Gen-19', ', Gen-20', ', Gen-21'];
+  const acceptedMaps = [', Gen-21', ', Gen-22', ', Gen-23'];
   return prices.filter((p) => p.tier === 0 || !p.variant || acceptedMaps.includes(p.variant));
 }
 

@@ -653,7 +653,9 @@ export class Profile {
       );
     }
 
-    prices = excludeLegacyMaps(prices);
+    if (this.activePriceLeagueId === 'Standard') {
+      prices = excludeLegacyMaps(prices);
+    }
     prices = excludeInvalidItems(prices);
 
     const customPrices = rootStore.customPriceStore.customLeaguePrices.find(
