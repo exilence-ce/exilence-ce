@@ -16,6 +16,7 @@ export interface IPoeNinjaItemOverviewLine {
   links: number;
   itemClass: number;
   sparkline: IPoeNinjaItemOverviewLineSparkline;
+  sparkLine?: IPoeNinjaItemOverviewLineSparkline;
   lowConfidenceSparkline: IPoeNinjaItemOverviewLineLowConfidenceSparkline;
   implicitModifiers: any[];
   explicitModifiers: IPoeNinjaItemOverviewLineExplicitModifier[];

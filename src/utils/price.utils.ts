@@ -2,6 +2,10 @@ import { rootStore } from '..';
 import { IExternalPrice } from '../interfaces/external-price.interface';
 import { IPoeNinjaCurrencyOverviewCurrencyDetail } from '../interfaces/poe-ninja/poe-ninja-currency-overview-currency-detail.interface';
 import { IPoeNinjaCurrencyOverviewLine } from '../interfaces/poe-ninja/poe-ninja-currency-overview-line.interface';
+import {
+  IPoeNinjaExchangeOverviewItem,
+  IPoeNinjaExchangeOverviewLine,
+} from '../interfaces/poe-ninja/poe-ninja-exchange-overview.interface';
 import { IPoeNinjaItemOverviewLine } from '../interfaces/poe-ninja/poe-ninja-item-overview-line.interface';
 import { IPoeWatchCombinedPriceItemData } from '../interfaces/poe-watch/poe-watch-combined-price-item-data.interface';
 import { IPricedItem } from '../interfaces/priced-item.interface';
@@ -41,9 +45,13 @@ export function getExternalPriceFromNinjaItem(
   type: string,
   league: string
 ) {
-  const detailsUrl = `${AppConfig.poeNinjaBaseUrl}/${getNinjaLeagueUrl(
-    league.toLowerCase()
+  const detailsUrl = `${AppConfig.poeNinjaBaseUrl}/poe1/economy/${getNinjaLeagueUrl(
+    league
   )}/${getNinjaTypeUrl(type)}/${item.detailsId}`;
+  // the current api no longer sends mapTier; the tier is embedded in the name,
+  // e.g "Map (Tier 16)", which matches the ingame baseType for maps
+  const mapTierMatch = / \(Tier (\d+)\)$/.exec(item.name);
+  const sparkLine = item.sparkLine ?? item.sparkline;
   return {
     name: item.name,
     icon: item.icon,
@@ -58,11 +66,58 @@ export function getExternalPriceFromNinjaItem(
     ilvl: item.levelRequired ?? 0,
     corrupted: item.corrupted ?? false,
     totalStacksize: item.stackSize ?? 0,
-    tier: item.mapTier ?? 0,
+    tier: item.mapTier ?? (mapTierMatch ? +mapTierMatch[1] : 0),
     count: item.count ?? 0,
     quality: item.gemQuality ?? 0,
     detailsUrl: detailsUrl,
-    sparkLine: item.count > 10 ? item.sparkline : item.lowConfidenceSparkline,
+    sparkLine: item.count > 10 ? sparkLine : item.lowConfidenceSparkline ?? sparkLine,
+  } as IExternalPrice;
+}
+
+const poeCdnBaseUrl = 'https://web.poecdn.com';
+// every divination card shares the same inventory art; the exchange overview carries
+// no per-card image, and the pricing service identifies cards by 'Inventory' in the icon
+const divinationCardIcon = `${poeCdnBaseUrl}/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvRGl2aW5hdGlvbi9JbnZlbnRvcnlJY29uIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/f34bf8cbb5/InventoryIcon.png`;
+
+export function getExternalPriceFromNinjaExchangeLine(
+  line: IPoeNinjaExchangeOverviewLine,
+  item: IPoeNinjaExchangeOverviewItem | undefined,
+  type: string,
+  league: string
+) {
+  const detailsUrl = `${AppConfig.poeNinjaBaseUrl}/poe1/economy/${getNinjaLeagueUrl(
+    league
+  )}/${getNinjaTypeUrl(type)}/${item?.detailsId ?? line.id}`;
+  const calculated = line.primaryValue ?? 0;
+  let icon = item?.image;
+  if (icon && icon.indexOf('http') !== 0) {
+    icon = `${poeCdnBaseUrl}${icon}`;
+  }
+  if (!icon && type === 'DivinationCard') {
+    icon = divinationCardIcon;
+  }
+  return {
+    name: item?.name ?? line.id,
+    icon: icon,
+    calculated: calculated,
+    links: 0,
+    variant: '',
+    elder: false,
+    shaper: false,
+    level: 0,
+    frameType: 5,
+    ilvl: 0,
+    corrupted: false,
+    totalStacksize: 0,
+    tier: 0,
+    // the exchange overview has no observation count; approximate one from traded
+    // volume, but never below the low-confidence threshold since these prices come
+    // from completed ingame currency-exchange trades rather than listings
+    count:
+      calculated > 0 ? Math.max(11, Math.round((line.volumePrimaryValue ?? 0) / calculated)) : 0,
+    quality: 0,
+    detailsUrl: detailsUrl,
+    sparkLine: line.sparkline,
   } as IExternalPrice;
 }
 
@@ -84,8 +139,8 @@ export function getExternalPriceFromNinjaCurrencyItem(
   type: string,
   league: string
 ) {
-  const detailsUrl = `${AppConfig.poeNinjaBaseUrl}/${getNinjaLeagueUrl(
-    league.toLowerCase()
+  const detailsUrl = `${AppConfig.poeNinjaBaseUrl}/poe1/economy/${getNinjaLeagueUrl(
+    league
   )}/${getNinjaTypeUrl(type)}/${item.detailsId}`;
   const calculated = item.receive ? item.receive.value : 0;
   const sparkLine = item.receiveSparkLine ? item.receiveSparkLine : undefined;
@@ -100,6 +155,35 @@ export function getExternalPriceFromNinjaCurrencyItem(
     sparkLine:
       item.receive && item.receive.count > 10 ? sparkLine : item.lowConfidenceReceiveSparkLine,
   } as IExternalPrice;
+}
+
+// the same item can appear in several overviews (e.g Divine Orb in both the stash
+// currency overview and the exchange overview); keep the occurrence backed by the
+// most observations so it survives the low-confidence filter
+export function dedupePrices(prices: IExternalPrice[]) {
+  const indexByKey: { [key: string]: number } = {};
+  const deduped: IExternalPrice[] = [];
+  prices.forEach((p) => {
+    const key = [
+      p.name,
+      p.frameType ?? 0,
+      p.quality ?? 0,
+      p.links ?? 0,
+      p.level ?? 0,
+      p.corrupted ?? false,
+      p.variant ?? '',
+      p.tier ?? 0,
+      p.ilvl ?? 0,
+    ].join('|');
+    const existingIndex = indexByKey[key];
+    if (existingIndex === undefined) {
+      indexByKey[key] = deduped.length;
+      deduped.push(p);
+    } else if ((p.count ?? 0) > (deduped[existingIndex].count ?? 0)) {
+      deduped[existingIndex] = p;
+    }
+  });
+  return deduped;
 }
 
 export const filterPrices = (prices: IExternalPrice[]) => {
@@ -186,8 +270,20 @@ export function mapApiPricedItemToPricedItem(item: IPricedItem) {
 }
 
 export function excludeLegacyMaps(prices: IExternalPrice[]) {
-  const acceptedMaps = [', Gen-19', ', Gen-20', ', Gen-21'];
-  return prices.filter((p) => p.tier === 0 || !p.variant || acceptedMaps.includes(p.variant));
+  // maps from older atlas generations linger on poe.ninja as ", Gen-N" variants;
+  // only keep the latest generation present in the price list
+  const genRegex = /^, Gen-(\d+)$/;
+  let latestGen = 0;
+  prices.forEach((p) => {
+    const match = genRegex.exec(p.variant ?? '');
+    if (match && +match[1] > latestGen) {
+      latestGen = +match[1];
+    }
+  });
+  return prices.filter((p) => {
+    const match = genRegex.exec(p.variant ?? '');
+    return !match || +match[1] === latestGen;
+  });
 }
 
 export function excludeInvalidItems(prices: IExternalPrice[]) {

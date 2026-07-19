@@ -5,7 +5,7 @@ import moment from 'moment';
 import { forkJoin, from, interval, of } from 'rxjs';
 import { catchError, concatMap, map, switchMap } from 'rxjs/operators';
 import { IExternalPrice } from '../interfaces/external-price.interface';
-import { filterPrices, findPrice } from '../utils/price.utils';
+import { dedupePrices, filterPrices, findPrice } from '../utils/price.utils';
 import { ILeaguePriceSource } from './../interfaces/league-price-source.interface';
 import { poeninjaService } from './../services/poe-ninja.service';
 import { LeaguePriceDetails } from './domains/league-price-details';
@@ -213,17 +213,15 @@ export class PriceStore {
             return forkJoin(
               // todo: add watch and other sources here
               poeninjaService.getCurrencyPrices(league.id),
-              poeninjaService.getItemPrices(league.id)
+              poeninjaService.getItemPrices(league.id),
+              poeninjaService.getExchangePrices(league.id)
             ).pipe(
               map((prices) => {
                 const combinedPrices: IExternalPrice[] = ([] as any).concat.apply(
                   [],
-                  [prices[0], prices[1]]
+                  [prices[0], prices[1], prices[2]]
                 );
-                const ninjaPrices: IExternalPrice[] = [];
-                combinedPrices.forEach((p) => {
-                  ninjaPrices.push(p);
-                });
+                const ninjaPrices: IExternalPrice[] = dedupePrices(combinedPrices);
 
                 const leaguePriceSource = this.getLeaguePriceSource(leaguePriceDetails);
                 leaguePriceSource.updatePrices(ninjaPrices);
