@@ -1,13 +1,10 @@
 export function getNinjaLeagueUrl(league: string) {
-  if (league === 'hardcore' || league === 'standard') {
-    return league;
-  } else {
-    if (league.indexOf('hardcore') > -1) {
-      return 'challengehc';
-    } else {
-      return 'challenge';
-    }
+  // poe.ninja league url slugs: "Standard" -> "standard", "Mirage" -> "mirage",
+  // "Hardcore Mirage" -> "miragehc"
+  if (league.startsWith('Hardcore ')) {
+    return `${league.substring('Hardcore '.length).toLowerCase().replace(/\s+/g, '')}hc`;
   }
+  return league.toLowerCase().replace(/\s+/g, '');
 }
 
 export function getNinjaTypeUrl(type: string) {

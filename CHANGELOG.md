@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+#### Fixed
+- Migrated poe.ninja price fetching to the new economy API (https://poe.ninja/docs/api), fixing the 404 errors that prevented any prices from loading (#49)
+- Price categories that poe.ninja removes in the future now degrade gracefully instead of failing the entire price fetch
+- Map prices are matched again by parsing the tier from the new "Map (Tier N)" naming, and the legacy-map filter now follows the latest map generation automatically
+
+#### Added
+- Prices for exchange-only currencies and fragments (e.g. Exalted Orb, Ancient Orb, timeless emblems) via the new currency-exchange overview
+- Price support for Runegrafts, Djinn Coins, Astrolabes and Unique Tinctures
+
 ## [1.2.11] - 2025-02-21
 #### Added
 - Added support for Beasts, new Map Variants & Kaluuran Runes (thank you Mrjamy <3)
