@@ -221,23 +221,23 @@ export function getItemName(name: string, typeline?: string) {
   return itemName.replace('<<set:MS>><<set:M>><<set:S>>', '').trim();
 }
 
-export function isElderMap(implicitMods: string[]): boolean {
+export function isElderMap(implicitMods: any): boolean {
   if (implicitMods) {
-    return implicitMods.some((im) => im.includes('Elder'));
+    return implicitMods.some((im) => im.description.includes('Elder'));
   }
   return false;
 }
 
-export function isShaperMap(implicitMods: string[]): boolean {
+export function isShaperMap(implicitMods: any): boolean {
   if (implicitMods) {
-    return implicitMods.some((im) => im.includes('Shaper'));
+    return implicitMods.some((im) => im.description.includes('Shaper'));
   }
   return false;
 }
 
-export function getItemVariant(sockets: ISocket[], explicitMods: string[], name: string): string {
+export function getItemVariant(sockets: ISocket[], explicitMods: any, name: string): string {
   if (explicitMods) {
-    const watchStoneUsesMod = explicitMods.find((em) => em.includes('uses remaining'));
+    const watchStoneUsesMod = explicitMods.find((em) => em.description.includes('uses remaining'));
     if (watchStoneUsesMod) {
       return watchStoneUsesMod.split(' ')[0];
     }
