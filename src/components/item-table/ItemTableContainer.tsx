@@ -44,6 +44,7 @@ import itemTableBulkSellColumns from './itemTableBulkSellColumns';
 import itemTableColumns from './itemTableColumns';
 import itemTableGroupColumns from './itemTableGroupColumns';
 import itemTableComparisonColumns from './itemTableComparisonColumns';
+import ItemTableSnapshotSelect from './item-table-snapshot-select/ItemTableSnapshotSelect';
 
 export const itemTableFilterSpacing = 2;
 
@@ -272,6 +273,7 @@ const ItemTableContainer = ({
                       </Tooltip>
                     </ToggleButton>
                   </ToggleButtonGroup>
+                  {!activeGroup && <ItemTableSnapshotSelect />}
                   <ItemTableFilter
                     array={getItems}
                     handleFilter={handleFilter}
