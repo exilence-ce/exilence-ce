@@ -54,11 +54,11 @@ const itemTableComparisonColumns: Column<object>[] = [
   }),
   itemValue({
     accessor: 'calculated',
-    header: 'Price (c)',
+    header: 'Price',
   }),
   itemValue({
     accessor: 'total',
-    header: 'Total value diff (c)',
+    header: 'Total value diff',
     diff: true,
   }),
 ];

@@ -17,6 +17,7 @@ import { formatSparklineChartData, getRawPriceFromPricedItem } from '../../utils
 import { openCustomLink } from '../../utils/window.utils';
 import SparklineChart from '../sparkline-chart/SparklineChart';
 import useStyles from './Columns.styles';
+import { currencyConversion } from '../../utils/unitconversion';
 
 export function itemIcon(options: { accessor: string; header: string }): Column<object> {
   const { header, accessor } = options;
@@ -341,7 +342,7 @@ const ItemValueCellComponent = ({
   const { t } = useTranslation();
   const tryParseNumber = (value: boolean | string | number, diff?: boolean) => {
     return typeof value === 'number'
-      ? `${diff && value > 0 ? '+ ' : ''}${value.toFixed(2)}`
+      ? `${diff && value > 0 ? '+ ' : ''}${currencyConversion(value, 2)}`
       : value;
   };
 

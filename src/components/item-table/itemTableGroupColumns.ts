@@ -53,14 +53,14 @@ const itemTableGroupColumns: Column<object>[] = [
   }),
   itemValue({
     accessor: 'calculated',
-    header: 'Price (c)',
+    header: 'Price',
   }),
   itemValue({
     accessor: 'total',
-    header: 'Total value (c)',
+    header: 'Total value',
   }),
   itemValue({
-    header: 'Cumulative (c)',
+    header: 'Cumulative',
     cumulative: true,
   }),
 ];
