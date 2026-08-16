@@ -678,7 +678,13 @@ export class Profile {
       return stashTabWithItems;
     });
 
-    const filteredTabs = pricedStashTabs.map((pst) => {
+    const guardedStashTabs = rootStore.priceSpikeStore.applyPriceGuard(
+      pricedStashTabs,
+      activePriceLeague!.id,
+      this.snapshots.length > 0 ? this.snapshots[0] : undefined
+    );
+
+    const filteredTabs = guardedStashTabs.map((pst) => {
       const mergedTabItems = mergeItemStacks(pst.pricedItems).filter(
         (pi) => pi.total >= rootStore.settingStore.totalPriceThreshold && pi.total > 0
       );

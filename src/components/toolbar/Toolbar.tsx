@@ -74,6 +74,8 @@ type ToolbarProps = {
   handleClearSnapshots: () => void;
   handleRemoveProfile: () => void;
   handleCancelSnapshot: () => void;
+  handlePriceSpikesOpen: () => void;
+  pendingPriceSpikeCount: number;
 };
 
 const Toolbar = ({
@@ -104,6 +106,8 @@ const Toolbar = ({
   handleRemoveProfile,
   handleOverlay,
   handleCancelSnapshot,
+  handlePriceSpikesOpen,
+  pendingPriceSpikeCount,
 }: ToolbarProps) => {
   const classes = useStyles();
   const { t } = useTranslation();
@@ -318,6 +322,22 @@ const Toolbar = ({
                   </IconButton>
                 </span>
               </Tooltip>
+              {pendingPriceSpikeCount > 0 && (
+                <Tooltip title={t('label.price_spike_icon_title') || ''} placement="bottom">
+                  <span>
+                    <IconButton
+                      onClick={() => handlePriceSpikesOpen()}
+                      aria-label="review price spikes"
+                      className={classes.iconButton}
+                      size="large"
+                    >
+                      <Badge badgeContent={pendingPriceSpikeCount} color="error">
+                        <WarningIcon fontSize="small" />
+                      </Badge>
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
             </Grid>
             <Grid item className={classes.divider} />
             <Grid item className={classes.overlayArea} data-tour-elem="overlayArea">

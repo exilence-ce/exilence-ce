@@ -7,6 +7,7 @@ import { delay, tap } from 'rxjs/operators';
 import { useStores } from '../..';
 import { formatValue } from '../../utils/snapshot.utils';
 import ConfirmationDialog from '../confirmation-dialog/ConfirmationDialog';
+import PriceSpikeDialogContainer from '../price-spike-dialog/PriceSpikeDialogContainer';
 import RemoveSnapshotsDialogContainer from '../remove-snapshots-dialog/RemoveSnapshotsDialogContainer';
 import Toolbar from './Toolbar';
 
@@ -21,6 +22,7 @@ const ToolbarContainer = () => {
     overlayStore,
     logStore,
     rateLimitStore,
+    priceSpikeStore,
   } = useStores();
   const { t } = useTranslation();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -108,6 +110,7 @@ const ToolbarContainer = () => {
   return (
     <>
       <RemoveSnapshotsDialogContainer />
+      <PriceSpikeDialogContainer />
       <ConfirmationDialog
         show={uiStateStore!.confirmRemoveProfileDialogOpen}
         onClose={() => uiStateStore!.setConfirmRemoveProfileDialogOpen(false)}
@@ -151,6 +154,8 @@ const ToolbarContainer = () => {
         handleClearSnapshots={() => uiStateStore!.setRemoveSnapshotsDialogOpen(true)}
         handleRemoveProfile={() => uiStateStore!.setConfirmRemoveProfileDialogOpen(true)}
         handleCancelSnapshot={() => uiStateStore!.setCancelSnapshot(true)}
+        handlePriceSpikesOpen={() => uiStateStore!.setPriceSpikeDialogOpen(true)}
+        pendingPriceSpikeCount={priceSpikeStore!.pendingSpikeCount}
         isSnapshotting={uiStateStore!.isSnapshotting}
         isInitiating={uiStateStore!.isInitiating || uiStateStore!.isValidating}
         isUpdatingPrices={priceStore!.isUpdatingPrices}

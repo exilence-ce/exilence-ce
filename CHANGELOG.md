@@ -2,6 +2,10 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.3.1]
+#### Added
+- Protection against manipulated prices: when an item's price increases by more than 1000% since your previous snapshot, it is held back for review instead of being taken at face value. Held items are excluded from your net worth and income until you either approve the new price or keep the last trusted one, with "Approve all" and "Keep all" available for quick handling.
+  - A held item only returns to normal pricing once its increase drops below 500%, so it does not come back into your net worth while still priced several times above the value it was trusted at
+  - Only compares against snapshots taken within the last 7 days, so returning after a break does not flag the whole stash
 #### Fixed
 - Bumped the internal application version, which was left at 1.2.11 for the 1.3.0 release and prevented existing installations from being offered the update
 

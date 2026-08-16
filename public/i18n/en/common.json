@@ -21,7 +21,12 @@
     "apply_filter": "Apply filter",
     "currency_switch": "Click to switch currency",
     "select_all": "Select all",
-    "remove_snapshots": "Remove snapshots"
+    "remove_snapshots": "Remove snapshots",
+    "approve_new_price": "Approve new price",
+    "keep_old_price": "Keep old price",
+    "approve_all_new_prices": "Approve all",
+    "keep_all_old_prices": "Keep all",
+    "decide_later": "Decide later"
   },
   "title": {
     "login": "Login",
@@ -58,7 +63,8 @@
     "hardware_acceleration": "Hardware Acceleration",
     "reset_indexeddb": "Reset Data",
     "release_channel_settings": "Release Channel Settings",
-    "app_exit_action_settings": "Application on exit action"
+    "app_exit_action_settings": "Application on exit action",
+    "price_spike_dialog_title": "Unusual price increases detected"
   },
   "label": {
     "items_missing": "No items exist on snapshot",
@@ -214,7 +220,9 @@
     "prophecies": "Prophecies",
     "scarabs": "Scarabs",
     "sets": "Sets",
-    "note_discord": "Note for pasting into Discord"
+    "note_discord": "Note for pasting into Discord",
+    "price_spike_icon_title": "Review unusual price increases",
+    "price_spike_change": "{{oldPrice}} to {{newPrice}}"
   },
   "value": {
     "none": "None",
@@ -254,10 +262,12 @@
     "ga_consent_sub_text": "To clarify, we don't track anything related to your Path of Exile account in Google Analytics, and can't identify you as a user.",
     "ga_consent_short_text": "By proceeding below, you agree to ",
     "session_id_dialog_prefix": "The session Id is located in a cookie from the",
-    "session_id_dialog_suffix": "website under the name POESESSID. Use the appropriate link below to find how you inspect cookies using your browser."
+    "session_id_dialog_suffix": "website under the name POESESSID. Use the appropriate link below to find how you inspect cookies using your browser.",
+    "price_spike": "The price of the items below increased dramatically since your previous snapshot, which can happen when the market is manipulated. They are excluded from your net worth and income until you decide. Keep the old price to hold the last trusted value until the price settles, or approve the new price to use it from now on."
   },
   "unit": {
     "chaos": "c",
-    "minute": "min"
+    "minute": "min",
+    "percent": "%"
   }
 }

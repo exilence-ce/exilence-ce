@@ -146,6 +146,7 @@ const renderApp = () => {
     hydrate('league', rootStore.leagueStore),
     hydrate('setting', rootStore.settingStore),
     hydrate('rateLimit', rootStore.rateLimitStore),
+    hydrate('priceSpike', rootStore.priceSpikeStore),
   ])
     .then(() => {
       rootStore.settingStore.setUiScale(rootStore.settingStore.uiScale);

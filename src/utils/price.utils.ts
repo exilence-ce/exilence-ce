@@ -157,6 +157,40 @@ export function getExternalPriceFromNinjaCurrencyItem(
   } as IExternalPrice;
 }
 
+export function getPriceIncreasePercent(previousPrice: number, currentPrice: number) {
+  if (previousPrice <= 0) {
+    return 0;
+  }
+  return ((currentPrice - previousPrice) / previousPrice) * 100;
+}
+
+// identifies a specific priceable variation of an item (a 6-linked corrupted
+// unique is a different price than its unlinked version), so the same item can be
+// recognised across price sources and across snapshots
+export function getItemPriceKey(item: {
+  name: string;
+  frameType?: number;
+  quality?: number;
+  links?: number;
+  level?: number;
+  corrupted?: boolean;
+  variant?: string;
+  tier?: number;
+  ilvl?: number;
+}) {
+  return [
+    item.name,
+    item.frameType ?? 0,
+    item.quality ?? 0,
+    item.links ?? 0,
+    item.level ?? 0,
+    item.corrupted ?? false,
+    item.variant ?? '',
+    item.tier ?? 0,
+    item.ilvl ?? 0,
+  ].join('|');
+}
+
 // the same item can appear in several overviews (e.g Divine Orb in both the stash
 // currency overview and the exchange overview); keep the occurrence backed by the
 // most observations so it survives the low-confidence filter
@@ -164,17 +198,7 @@ export function dedupePrices(prices: IExternalPrice[]) {
   const indexByKey: { [key: string]: number } = {};
   const deduped: IExternalPrice[] = [];
   prices.forEach((p) => {
-    const key = [
-      p.name,
-      p.frameType ?? 0,
-      p.quality ?? 0,
-      p.links ?? 0,
-      p.level ?? 0,
-      p.corrupted ?? false,
-      p.variant ?? '',
-      p.tier ?? 0,
-      p.ilvl ?? 0,
-    ].join('|');
+    const key = getItemPriceKey(p);
     const existingIndex = indexByKey[key];
     if (existingIndex === undefined) {
       indexByKey[key] = deduped.length;
