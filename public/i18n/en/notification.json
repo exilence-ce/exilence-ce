@@ -146,10 +146,12 @@
   },
   "warning": {
     "title": {
-      "data_will_be_cleared": "Remote data will be cleared soon"
+      "data_will_be_cleared": "Remote data will be cleared soon",
+      "price_spike_detected": "Unusual price increase detected"
     },
     "description": {
-      "data_will_be_cleared": "We will stop storing data for you on the server unless your connection is reestablished soon"
+      "data_will_be_cleared": "We will stop storing data for you on the server unless your connection is reestablished soon",
+      "price_spike_detected": "Some items changed price dramatically and need your review before they count towards your net worth"
     }
   },
   "info": {

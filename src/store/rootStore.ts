@@ -6,6 +6,7 @@ import { LogStore } from './logStore';
 import { MigrationStore } from './migrationStore';
 import { NotificationStore } from './notificationStore';
 import { OverlayStore } from './overlayStore';
+import { PriceSpikeStore } from './priceSpikeStore';
 import { PriceStore } from './priceStore';
 import { RateLimitStore } from './rateLimitStore';
 import { RouteStore } from './routeStore';
@@ -30,6 +31,7 @@ export class RootStore {
   logStore: LogStore;
   customPriceStore: CustomPriceStore;
   rateLimitStore: RateLimitStore;
+  priceSpikeStore: PriceSpikeStore;
 
   constructor() {
     this.uiStateStore = new UiStateStore(this);
@@ -47,5 +49,6 @@ export class RootStore {
     this.logStore = new LogStore(this);
     this.customPriceStore = new CustomPriceStore(this);
     this.rateLimitStore = new RateLimitStore(this);
+    this.priceSpikeStore = new PriceSpikeStore(this);
   }
 }
