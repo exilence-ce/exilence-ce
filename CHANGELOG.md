@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [1.3.1]
+#### Fixed
+- Bumped the internal application version, which was left at 1.2.11 for the 1.3.0 release and prevented existing installations from being offered the update
+
 ## [1.3.0]
 #### Fixed
 - Migrated poe.ninja price fetching to the new economy API (https://poe.ninja/docs/api), fixing the 404 errors that prevented any prices from loading (#49)
