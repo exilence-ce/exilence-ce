@@ -4,8 +4,10 @@ import { initReactI18next } from 'react-i18next';
 import { electronService } from '../services/electron.service';
 import AppConfig from './app.config';
 
-const path = require('path');
-const url = require('url');
+// Use Node's modules directly (the renderer has nodeIntegration). Webpack 4 used to
+// bundle POSIX browser polyfills for these; `path.posix` keeps that exact behavior.
+const path = window.require('path').posix;
+const url = window.require('url');
 
 declare global {
   interface Window {

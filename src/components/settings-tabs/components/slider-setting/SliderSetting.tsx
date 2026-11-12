@@ -42,9 +42,9 @@ const SliderSetting = ({
   };
 
   const handleBlur = () => {
-    if (localValue < 0) {
+    if (Number(localValue) < 0) {
       setLocalValue(50);
-    } else if (localValue > 150) {
+    } else if (Number(localValue) > 150) {
       setLocalValue(150);
     }
   };

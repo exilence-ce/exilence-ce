@@ -1,5 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron';
-import * as isDev from 'electron-is-dev';
+import { app, ipcMain, BrowserWindow } from 'electron';
 import * as windowStateKeeper from 'electron-window-state';
 import { browserWindows, browserWindowsConfig, NET_WORTH_OVERLAY } from '../../../browserWindows';
 
@@ -27,7 +26,7 @@ const netWorthOverlayConfig = () => {
   overlayState.manage(browserWindows[NET_WORTH_OVERLAY]);
 
   browserWindows[NET_WORTH_OVERLAY].loadFile(
-    isDev
+    !app.isPackaged
       ? browserWindowsConfig[NET_WORTH_OVERLAY].devLoadPath
       : browserWindowsConfig[NET_WORTH_OVERLAY].prodLoadPath
   );

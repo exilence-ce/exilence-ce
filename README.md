@@ -26,12 +26,12 @@ Download the latest release at https://github.com/exilence-ce/exilence-ce/releas
 
 Currently runs with:
 
-- Electron 15.1.0
+- Electron 45.3.1 (bundles Node 24)
 - React 17.0.1
 - mobx 6.0.1
 - .NET Core 3.1
-- **node 16.x**
-- **npm 7.x**
+- **node 26.x** (current LTS, see `.nvmrc`)
+- **npm 11.x**
 
 ## Contributing with development
 
@@ -68,7 +68,7 @@ npm run smoke-build-win (build for windows)
 ```
 These create the AppImage the .desktop file points to.
 
-NOTE: Running a build using node versions newer than v14 seem to fail on MacOS and Linux. For development on these platforms, it's recommended to use v14.16.1 (Latest LTS).
+NOTE: Use the Node version pinned in `.nvmrc` (`nvm use`), or let Volta pick it up from `package.json`. The Electron binary is downloaded automatically the first time the app is launched.
 
 Other build options:
 ```

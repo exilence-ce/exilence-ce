@@ -150,8 +150,8 @@ const OverviewWidgetContent = ({
                     style={secondaryValueStyles}
                     className={clsx(classes.secondary, {
                       [classes.currencyChange]: currency,
-                      [classes.positiveChange]: secondaryValue > 0,
-                      [classes.negativeChange]: secondaryValue < 0,
+                      [classes.positiveChange]: Number(secondaryValue) > 0,
+                      [classes.negativeChange]: Number(secondaryValue) < 0,
                     })}
                   >
                     {formatValue(secondaryValue, currencyShort, true)}

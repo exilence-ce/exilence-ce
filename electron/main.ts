@@ -1,7 +1,6 @@
 import { app, BrowserWindow, screen, ipcMain } from 'electron';
 import * as path from 'path';
-import * as isDev from 'electron-is-dev';
-import * as sentry from '@sentry/electron';
+import * as sentry from '@sentry/electron/main';
 import * as windowStateKeeper from 'electron-window-state';
 
 import {
@@ -28,6 +27,8 @@ import {
   NET_WORTH_OVERLAY,
 } from './browserWindows';
 import { SYSTEMS } from './enums';
+
+const isDev = !app.isPackaged;
 
 if (!isDev) {
   sentry.init({
@@ -145,12 +146,10 @@ function createWindow() {
   /**
    * Window handlers
    */
-  ipcMain.handle('restart', (e) => {
+  ipcMain.handle('restart', () => {
     if (!isQuitting) {
-      e.preventDefault();
       app.relaunch();
       app.exit(0);
-      e.returnValue = false;
     }
   });
 
