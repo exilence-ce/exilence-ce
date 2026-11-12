@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import { autoUpdater } from 'electron-updater';
-import log from 'electron-log';
+import log from 'electron-log/main';
 
 import checkForMissingWindow from './utils';
 import { getLocalSettings } from './localSettings';

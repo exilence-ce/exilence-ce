@@ -87,7 +87,7 @@ const BulkSellPrerequisitesPanel = () => {
             <TextField
               variant="standard"
               style={{ width: 255 }}
-              value={`${currentItemsTableValue.toFixed(2)}c` ?? ''}
+              value={`${currentItemsTableValue.toFixed(2)}c`}
               disabled
               label={t('label.current_price')}
             />

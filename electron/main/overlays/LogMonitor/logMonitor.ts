@@ -1,5 +1,4 @@
-import { BrowserWindow, ipcMain } from 'electron';
-import * as isDev from 'electron-is-dev';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { browserWindows, browserWindowsConfig, LOG_MONITOR_OVERLAY } from '../../../browserWindows';
 
 import checkForMissingWindow from '../../utils';
@@ -22,7 +21,7 @@ const createLogMonitorOverlay = ({ mainWindow }: CreateLogMonitorProps) => {
     });
 
     browserWindows[LOG_MONITOR_OVERLAY].loadFile(
-      isDev
+      !app.isPackaged
         ? browserWindowsConfig[LOG_MONITOR_OVERLAY].devLoadPath
         : browserWindowsConfig[LOG_MONITOR_OVERLAY].prodLoadPath
     );
