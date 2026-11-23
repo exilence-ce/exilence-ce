@@ -353,6 +353,20 @@ fn GeneralTab(state: State) -> impl IntoView {
                     })
                 }
             />
+            <CheckboxSetting
+                id="exempt-lifeforce-and-markers"
+                label=MessageKey::SettingsExemptLifeforceAndMarkersLabel
+                value=MessageKey::SettingsExemptLifeforceAndMarkers
+                help=MessageKey::SettingsExemptLifeforceAndMarkersHelp
+                requires_snapshot=true
+                checked=Signal::derive(move || {
+                    state.settings.with(|s| s.exempt_lifeforce_and_markers)
+                })
+                patch=|on| SettingsPatch {
+                    exempt_lifeforce_and_markers: Some(on),
+                    ..SettingsPatch::default()
+                }
+            />
             <NumberSetting
                 id="total-price-threshold"
                 label=MessageKey::SettingsTotalPriceThreshold

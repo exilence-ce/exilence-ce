@@ -30,6 +30,7 @@ const DEFAULT: PricingOptions = PricingOptions {
     low_confidence_pricing: false,
     price_threshold: 0.0,
     total_price_threshold: 0.0,
+    exempt_lifeforce_and_markers: false,
 };
 const LOW_CONFIDENCE: PricingOptions = PricingOptions {
     low_confidence_pricing: true,

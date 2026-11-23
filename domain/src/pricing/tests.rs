@@ -435,6 +435,38 @@ fn f5_price_threshold_applies_only_while_total_threshold_is_0() {
 }
 
 #[test]
+fn f5_exempt_lifeforce_and_markers_bypass_price_threshold() {
+    let entries = [
+        currency_entry("Vivid Crystallised Lifeforce", 0.05),
+        currency_entry("Wild Crystallised Lifeforce", 0.04),
+        currency_entry("Primal Crystallised Lifeforce", 0.03),
+        currency_entry("Rogue's Marker", 0.002),
+        currency_entry("Orb of Alchemy", 0.5),
+    ];
+    let vivid = ItemDefinition::from_item(&currency("Vivid Crystallised Lifeforce"));
+    let marker = ItemDefinition::from_item(&currency("Rogue's Marker"));
+    let alchemy = ItemDefinition::from_item(&currency("Orb of Alchemy"));
+
+    let off = PricingOptions {
+        price_threshold: 1.1,
+        ..default_options()
+    };
+    let table_off = PriceTable::new(&entries, &off, &[]);
+    assert_eq!(table_off.unit_price(&vivid), None);
+    assert_eq!(table_off.unit_price(&marker), None);
+    assert_eq!(table_off.unit_price(&alchemy), None);
+
+    let on = PricingOptions {
+        exempt_lifeforce_and_markers: true,
+        ..off
+    };
+    let table_on = PriceTable::new(&entries, &on, &[]);
+    assert_eq!(table_on.unit_price(&vivid), Some(0.05));
+    assert_eq!(table_on.unit_price(&marker), Some(0.002));
+    assert_eq!(table_on.unit_price(&alchemy), None);
+}
+
+#[test]
 fn f5_total_threshold_drops_merged_rows_below_it() {
     let mut alchemy = currency("Orb of Alchemy");
     alchemy.stack_size = Some(3);

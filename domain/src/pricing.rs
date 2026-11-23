@@ -114,10 +114,21 @@ pub struct PricingOptions {
     pub price_threshold: f64,
     /// Total threshold in chaos (0–5000) for merged item rows.
     pub total_price_threshold: f64,
+    /// On: Harvest Crystallised Lifeforce and Rogue's Markers bypass the
+    /// per-item `price_threshold`.
+    pub exempt_lifeforce_and_markers: bool,
 }
 
 /// Item names legacy never prices.
 const INVALID_ITEMS: [&str; 1] = ["Charged Compass"];
+
+/// Stack-dropping currencies that can bypass the per-item `price_threshold`.
+const THRESHOLD_EXEMPT_ITEMS: [&str; 4] = [
+    "Vivid Crystallised Lifeforce",
+    "Wild Crystallised Lifeforce",
+    "Primal Crystallised Lifeforce",
+    "Rogue's Marker",
+];
 
 /// The price entries that survive the pricing options, custom prices
 /// applied, indexed for matching. Every legacy matching rule compares the
@@ -152,7 +163,10 @@ impl<'a> PriceTable<'a> {
                 .filter(|p| options.low_confidence_pricing || p.count > 10)
                 .filter(|p| {
                     options.total_price_threshold != 0.0
-                        || (p.calculated != 0.0 && p.calculated >= options.price_threshold)
+                        || (p.calculated != 0.0
+                            && (p.calculated >= options.price_threshold
+                                || (options.exempt_lifeforce_and_markers
+                                    && THRESHOLD_EXEMPT_ITEMS.contains(&p.key.name.as_str()))))
                 }),
         );
         surviving.retain(|p| !INVALID_ITEMS.contains(&p.key.name.as_str()));

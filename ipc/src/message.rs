@@ -414,6 +414,9 @@ message_keys! {
     SettingsPriceThresholdHelp => "settings-price-threshold-help",
     SettingsTotalPriceThreshold => "settings-total-price-threshold",
     SettingsTotalPriceThresholdHelp => "settings-total-price-threshold-help",
+    SettingsExemptLifeforceAndMarkersLabel => "settings-exempt-lifeforce-and-markers-label",
+    SettingsExemptLifeforceAndMarkers => "settings-exempt-lifeforce-and-markers",
+    SettingsExemptLifeforceAndMarkersHelp => "settings-exempt-lifeforce-and-markers-help",
     /// UI scale, its help and its reset (F17).
     SettingsUiScale => "settings-ui-scale",
     SettingsUiScaleHelp => "settings-ui-scale-help",

@@ -298,6 +298,9 @@ settings-price-threshold = Price threshold
 settings-price-threshold-help = Sets the cutoff for including items
 settings-total-price-threshold = Total price threshold
 settings-total-price-threshold-help = Sets the cutoff for including total stack of items
+settings-exempt-lifeforce-and-markers-label = Exclude from price threshold
+settings-exempt-lifeforce-and-markers = Harvest lifeforce & Rogue's Markers
+settings-exempt-lifeforce-and-markers-help = Includes Crystallised Lifeforce and Rogue's Markers even below the price threshold
 
 settings-ui-scale = Interface scale (%)
 settings-ui-scale-help = Sets the UI scale
