@@ -5,7 +5,7 @@ members = ["wire", "domain", "ninja", "ipc", "src-tauri", "ui", "tools/release",
 [workspace.package]
 # The app's version: the next release's. A `v*` tag must name it, and
 # CHANGELOG.md must have its section (release workflow).
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 edition = "2024"
 publish = false
 
