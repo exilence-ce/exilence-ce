@@ -81,11 +81,14 @@ pub fn merge<'a>(rows: impl IntoIterator<Item = TabRow<'a>>) -> Vec<MergedRow<'a
 fn same_item(merged: &ItemDefinition, item: &ItemDefinition) -> bool {
     let map = merged.type_line.contains(" Map");
     merged.name == item.name
+        && (merged.frame_type != frame_type::VISCERA || merged.variant == item.variant)
         && (map || merged.quality == item.quality)
         && merged.links == item.links
         && merged.level == item.level
         && merged.corrupted == item.corrupted
-        && (!merged.type_line.contains(" Seed") || map || merged.ilvl == item.ilvl)
+        && ((!merged.type_line.contains(" Seed") && !merged.name.ends_with(" Wombgift"))
+            || map
+            || merged.ilvl == item.ilvl)
         // The frame type counts, except for maps that are not unique.
         && (merged.frame_type == item.frame_type
             || (merged.name.contains(" Map") && merged.frame_type != frame_type::UNIQUE))
@@ -290,6 +293,31 @@ mod tests {
         assert_eq!(
             merge([row(0, &linked, 1, 1.0), row(0, &unlinked, 1, 1.0)]).len(),
             2
+        );
+
+        let viscera_a = ItemDefinition {
+            variant: "+# to maximum number of Spectres".to_owned(),
+            ..definition("Coven Queen's Crown", "Coven Queen's Crown", frame_type::VISCERA)
+        };
+        let viscera_b = ItemDefinition {
+            variant: "#% reduced bonuses gained from Equipped Boots".to_owned(),
+            ..viscera_a.clone()
+        };
+        assert_eq!(
+            merge([row(0, &viscera_a, 1, 100.0), row(0, &viscera_b, 1, 10.0)]).len(),
+            2,
+            "viscera with different variants stay separate rows"
+        );
+
+        let wombgift = |ilvl| ItemDefinition {
+            ilvl,
+            ..definition("Ancient Wombgift", "Ancient Wombgift", frame_type::CURRENCY)
+        };
+        let (wg_low, wg_high) = (wombgift(40), wombgift(84));
+        assert_eq!(
+            merge([row(0, &wg_low, 1, 118.5), row(0, &wg_high, 1, 18.0)]).len(),
+            2,
+            "wombgifts with different item levels stay separate rows"
         );
     }
 

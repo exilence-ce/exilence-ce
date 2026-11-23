@@ -17,6 +17,8 @@ pub struct Item {
     pub base_type: String,
     pub frame_type: u32,
     #[serde(default)]
+    pub frame_type_id: Option<String>,
+    #[serde(default)]
     pub icon: String,
     #[serde(default)]
     pub ilvl: u32,

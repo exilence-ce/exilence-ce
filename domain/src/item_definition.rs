@@ -46,6 +46,7 @@ pub mod frame_type {
     pub const PROPHECY: u32 = 8;
     pub const RELIC: u32 = 9;
     pub const ALLFLAME_EMBER: u32 = 11;
+    pub const VISCERA: u32 = 15;
 }
 
 const BEAST_DESCRIPTION: &str = "Right-click to add this to your bestiary.";
@@ -54,9 +55,21 @@ impl ItemDefinition {
     /// Derives the definition of a GGG item.
     pub fn from_item(item: &Item) -> Self {
         let unique = item.frame_type == frame_type::UNIQUE;
+        let viscera = item.frame_type == frame_type::VISCERA
+            || item
+                .frame_type_id
+                .as_deref()
+                .is_some_and(|id| id.eq_ignore_ascii_case("viscera"));
         let tier = property(&item.properties, |name| name == "Map Tier")
             .map_or(0, |text| text.trim().parse().unwrap_or(0));
-        let name = if tier != 0 && !unique {
+        let name = if viscera {
+            let raw = if item.name.is_empty() {
+                &item.type_line
+            } else {
+                &item.name
+            };
+            item_name(raw, None)
+        } else if tier != 0 && !unique {
             item.base_type.clone()
         } else {
             // D29: a Filled Coffin keeps this name (its type line); legacy
@@ -69,6 +82,17 @@ impl ItemDefinition {
         } else {
             item.ilvl
         };
+        let variant = if viscera {
+            let joined = item
+                .implicit_mods
+                .iter()
+                .map(|m| m.description.as_str())
+                .collect::<Vec<_>>()
+                .join(" / ");
+            viscera_variant(&joined)
+        } else {
+            variant(item)
+        };
         Self {
             ilvl,
             tier,
@@ -76,7 +100,7 @@ impl ItemDefinition {
             sockets: item.sockets.len() as u32,
             quality: property_int(&item.properties, |name| name == "Quality"),
             level: property_int(&item.properties, |name| name == "Level"),
-            variant: variant(item),
+            variant,
             corrupted: item.corrupted,
             elder: item.elder || mentions(&item.implicit_mods, "Elder"),
             shaper: item.shaper || mentions(&item.implicit_mods, "Shaper"),
@@ -84,10 +108,78 @@ impl ItemDefinition {
             beast: item.descr_text.as_deref() == Some(BEAST_DESCRIPTION),
             name,
             type_line: item.type_line.clone(),
-            frame_type: item.frame_type,
+            frame_type: if viscera {
+                frame_type::VISCERA
+            } else {
+                item.frame_type
+            },
             icon: item.icon.clone(),
         }
     }
+}
+
+/// Normalizes a Viscera mod string to match poe.ninja's variant format:
+/// numeric rolls and `(a-b)` ranges become `#`, ` / ` separators become a
+/// space, and whitespace is collapsed.
+pub fn viscera_variant(mods: &str) -> String {
+    let mut normalized = String::with_capacity(mods.len());
+    let mut rest = mods;
+    while let Some(c) = rest.chars().next() {
+        if c == '('
+            && let Some(after) = strip_numeric_range(rest)
+        {
+            normalized.push('#');
+            rest = after;
+        } else if c.is_ascii_digit() {
+            normalized.push('#');
+            rest = strip_unsigned_number(rest);
+        } else {
+            normalized.push(c);
+            rest = &rest[c.len_utf8()..];
+        }
+    }
+    let tokens: Vec<&str> = normalized.split_whitespace().collect();
+    let mut out = String::with_capacity(normalized.len());
+    for (i, &token) in tokens.iter().enumerate() {
+        if token == "/" && i > 0 && i + 1 < tokens.len() {
+            continue;
+        }
+        if !out.is_empty() {
+            out.push(' ');
+        }
+        out.push_str(token);
+    }
+    out
+}
+
+fn strip_unsigned_number(s: &str) -> &str {
+    let int_end = s.bytes().take_while(u8::is_ascii_digit).count();
+    let after_int = &s[int_end..];
+    if let Some(after_dot) = after_int.strip_prefix('.') {
+        let frac_end = after_dot.bytes().take_while(u8::is_ascii_digit).count();
+        if frac_end > 0 {
+            return &after_dot[frac_end..];
+        }
+    }
+    after_int
+}
+
+fn strip_signed_number(s: &str) -> Option<&str> {
+    let body = s.strip_prefix('-').unwrap_or(s);
+    if !body.as_bytes().first().is_some_and(u8::is_ascii_digit) {
+        return None;
+    }
+    Some(strip_unsigned_number(body))
+}
+
+fn strip_numeric_range(s: &str) -> Option<&str> {
+    let rest = s.strip_prefix('(')?;
+    let rest = strip_signed_number(rest)?;
+    let rest = rest.trim_start();
+    let rest = rest.strip_prefix('-').or_else(|| rest.strip_prefix('–'))?;
+    let rest = rest.trim_start();
+    let rest = strip_signed_number(rest)?;
+    rest.strip_prefix(')')
 }
 
 /// Legacy `getItemName`: the name, followed by the type line when given,

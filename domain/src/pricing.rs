@@ -205,6 +205,11 @@ impl<'a> PriceTable<'a> {
 
     fn matching_entry(&self, item: &ItemDefinition) -> Option<&Candidate<'a>> {
         let named = self.named(&item.name);
+        if item.name.ends_with(" Wombgift") {
+            return named
+                .filter(|p| p.key.ilvl.is_some_and(|ilvl| ilvl <= item.ilvl))
+                .max_by_key(|p| p.key.ilvl);
+        }
         match item.frame_type {
             frame_type::NORMAL | frame_type::MAGIC | frame_type::RARE => {
                 if item.name.contains(" Map") {
@@ -241,6 +246,15 @@ impl<'a> PriceTable<'a> {
             frame_type::ALLFLAME_EMBER => named
                 .filter(|p| p.key.ilvl.is_some_and(|ilvl| ilvl <= item.ilvl))
                 .max_by_key(|p| p.key.ilvl),
+            frame_type::VISCERA => {
+                if item.variant.is_empty() {
+                    return None;
+                }
+                only(named.filter(|p| {
+                    p.key.frame_type == Some(frame_type::VISCERA)
+                        && p.key.variant.as_deref() == Some(item.variant.as_str())
+                }))
+            }
             // Currency (D29: a Filled Coffin too), relics and everything else.
             _ => only(named),
         }

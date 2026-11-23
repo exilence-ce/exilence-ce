@@ -59,6 +59,9 @@ fn captured_prices() -> Vec<PriceEntry> {
             OverviewKind::Exchange => "exchange",
         };
         let path = format!("{LEAGUE}/ninja/{dir}/{overview_type}.json");
+        if !root().join(&path).exists() {
+            continue;
+        }
         match kind {
             OverviewKind::Currency => {
                 if let Some(o) = fixture::<Option<CurrencyOverview>>(&path) {

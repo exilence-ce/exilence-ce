@@ -724,10 +724,10 @@ fn d31_impresence_variant_is_the_damage_type_its_mods_name() {
 #[test]
 fn f5_ninja_overviews_in_legacy_order() {
     let all: Vec<_> = ninja::overviews().collect();
-    assert_eq!(all.len(), 35);
+    assert_eq!(all.len(), 41);
     assert_eq!(all[0], (OverviewKind::Currency, "Currency"));
-    assert_eq!(all[2], (OverviewKind::Item, "Incubator"));
-    assert_eq!(all[19], (OverviewKind::Exchange, "Currency"));
+    assert_eq!(all[2], (OverviewKind::Item, "Viscera"));
+    assert_eq!(all[22], (OverviewKind::Exchange, "Currency"));
 }
 
 #[test]
@@ -945,6 +945,90 @@ fn d3_details_url_uses_legacy_league_and_type_slugs() {
     assert_eq!(page("Prophecy"), "prophecies/x");
     assert_eq!(page("BlightRavagedMap"), "blight-ravaged-maps/x");
     assert_eq!(page("SkillGem"), "skill-gems/x");
+    assert_eq!(page("Viscera"), "viscera/x");
+    assert_eq!(page("Thread"), "threads/x");
+}
+
+#[test]
+fn covens_viscera_matches_by_normalized_implicit_variant() {
+    let overview: ItemOverview = serde_json::from_value(serde_json::json!({
+        "lines": [
+            {
+                "name": "Coven Queen's Crown",
+                "variant": "+# to maximum number of Spectres",
+                "itemClass": 15,
+                "chaosValue": 36730.0,
+                "count": 25,
+                "detailsId": "coven-queens-crown-spectres"
+            },
+            {
+                "name": "Coven Queen's Crown",
+                "variant": "(31-50)% reduced bonuses gained from Equipped Boots / +10 to Strength",
+                "itemClass": 15,
+                "chaosValue": 420.0,
+                "count": 20,
+                "detailsId": "coven-queens-crown-boots"
+            }
+        ]
+    }))
+    .unwrap();
+    let prices: Vec<_> = overview.price_entries("Viscera").collect();
+    let table = PriceTable::new(&prices, &PricingOptions::default(), &[]);
+
+    let mut spectres = item("Coven Queen's Crown", "Coven Queen's Crown", frame_type::VISCERA);
+    spectres.implicit_mods = vec![ItemMod {
+        description: "+1 to maximum number of Spectres".into(),
+    }];
+    assert_eq!(
+        table.unit_price(&ItemDefinition::from_item(&spectres)),
+        Some(36730.0)
+    );
+
+    // Also matches when identified via frameTypeId instead of numeric frameType.
+    let mut boots = item("", "Coven Queen's Crown", frame_type::NORMAL);
+    boots.frame_type_id = Some("Viscera".into());
+    boots.implicit_mods = vec![
+        ItemMod {
+            description: "42% reduced bonuses gained from Equipped Boots".into(),
+        },
+        ItemMod {
+            description: "+10 to Strength".into(),
+        },
+    ];
+    let def = ItemDefinition::from_item(&boots);
+    assert_eq!(def.frame_type, frame_type::VISCERA);
+    assert_eq!(table.unit_price(&def), Some(420.0));
+
+    // Empty implicit mods must not match.
+    let empty = item("Coven Queen's Crown", "Coven Queen's Crown", frame_type::VISCERA);
+    assert_eq!(table.unit_price(&ItemDefinition::from_item(&empty)), None);
+}
+
+#[test]
+fn wombgift_matches_highest_item_level_bracket_not_above() {
+    let prices = [
+        with(entry("Ancient Wombgift", 118.5), |k| {
+            k.frame_type = Some(frame_type::CURRENCY);
+            k.ilvl = Some(40);
+        }),
+        with(entry("Ancient Wombgift", 18.0), |k| {
+            k.frame_type = Some(frame_type::CURRENCY);
+            k.ilvl = Some(84);
+        }),
+    ];
+    let table = PriceTable::new(&prices, &PricingOptions::default(), &[]);
+
+    let mut low = currency("Ancient Wombgift");
+    low.ilvl = 68;
+    assert_eq!(table.unit_price(&ItemDefinition::from_item(&low)), Some(118.5));
+
+    let mut high = currency("Ancient Wombgift");
+    high.ilvl = 85;
+    assert_eq!(table.unit_price(&ItemDefinition::from_item(&high)), Some(18.0));
+
+    let mut below = currency("Ancient Wombgift");
+    below.ilvl = 39;
+    assert_eq!(table.unit_price(&ItemDefinition::from_item(&below)), None);
 }
 
 #[test]
