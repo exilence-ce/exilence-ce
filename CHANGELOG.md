@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.0-beta.3
+
+- Prices for the Path of Exile 3.30 (Covens) items from poe.ninja: Thread, Ducats, Enshrouding Crystals, Viscera, Corpses and Wombgifts. Viscera with different implicit variants and Wombgifts of different item levels stay separate rows.
+- **Settings → General → Pricing settings → Exclude from price threshold: Harvest lifeforce & Rogue's Markers** (off by default) keeps Vivid, Wild and Primal Crystallised Lifeforce and Rogue's Markers in your net worth even when one is worth less than the price threshold; they drop in large stacks. Takes effect with the next snapshot.
+
 ## 2.0.0-beta.2
 
 - Linux packages besides the AppImage: a `.deb` for Debian and Ubuntu and, with stable releases, an `.rpm` for Fedora and openSUSE, both updating themselves like the AppImage (they ask for your password to install an update; an `.rpm` install follows Latest Stable only).

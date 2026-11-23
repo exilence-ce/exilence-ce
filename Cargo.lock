@@ -1259,7 +1259,7 @@ dependencies = [
 
 [[package]]
 name = "domain"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "serde",
  "serde_json",
@@ -1456,7 +1456,7 @@ dependencies = [
 
 [[package]]
 name = "exilence-ce-ng"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -2637,7 +2637,7 @@ dependencies = [
 
 [[package]]
 name = "ipc"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "fluent-bundle",
  "fluent-syntax",
@@ -3431,7 +3431,7 @@ checksum = "60993920e071b0c9b66f14e2b32740a4e27ffc82854dcd72035887f336a09a28"
 
 [[package]]
 name = "ninja"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "domain",
  "http",
@@ -3445,7 +3445,7 @@ dependencies = [
 
 [[package]]
 name = "ninja-drift"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "domain",
  "ninja",
@@ -4586,7 +4586,7 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "release-tool"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "semver",
  "serde",
@@ -6717,7 +6717,7 @@ dependencies = [
 
 [[package]]
 name = "ui"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "ipc",
  "js-sys",
@@ -7598,7 +7598,7 @@ dependencies = [
 
 [[package]]
 name = "wire"
-version = "2.0.0-beta.2"
+version = "2.0.0-beta.3"
 dependencies = [
  "prost",
  "prost-types",
