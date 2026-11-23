@@ -62,6 +62,7 @@ pub fn pricing_options(settings: &Settings) -> PricingOptions {
         low_confidence_pricing: settings.low_confidence_pricing,
         price_threshold: settings.price_threshold,
         total_price_threshold: settings.total_price_threshold,
+        exempt_lifeforce_and_markers: settings.exempt_lifeforce_and_markers,
     }
 }
 

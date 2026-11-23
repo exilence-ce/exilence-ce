@@ -96,6 +96,7 @@ fn f17_settings_accept_their_bounds_and_refuse_values_outside() {
         SettingsPatch {
             auto_snapshot: Some(true),
             low_confidence_pricing: Some(true),
+            exempt_lifeforce_and_markers: Some(true),
             hardware_acceleration: Some(false),
             ..SettingsPatch::default()
         },
@@ -107,6 +108,7 @@ fn f17_settings_accept_their_bounds_and_refuse_values_outside() {
         low_confidence_pricing: true,
         price_threshold: 100.0,
         total_price_threshold: 5000.0,
+        exempt_lifeforce_and_markers: true,
         ui_scale: 150,
         hardware_acceleration: false,
         ..Settings::default()

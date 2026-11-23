@@ -323,6 +323,7 @@ pub struct Settings {
     pub price_threshold: f64,
     /// Chaos, 0..=5000.
     pub total_price_threshold: f64,
+    pub exempt_lifeforce_and_markers: bool,
     pub currency: Currency,
     pub chart_time_span: TimeSpan,
     pub net_worth_chart_open: bool,
@@ -356,6 +357,7 @@ impl Default for Settings {
             low_confidence_pricing: false,
             price_threshold: 0.0,
             total_price_threshold: 0.0,
+            exempt_lifeforce_and_markers: false,
             currency: Currency::Chaos,
             chart_time_span: TimeSpan::All,
             net_worth_chart_open: false,

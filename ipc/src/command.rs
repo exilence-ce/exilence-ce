@@ -110,6 +110,10 @@ pub struct SettingsPatch {
     /// Chaos, 0..=5000; applies from the next Snapshot (F5).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub total_price_threshold: Option<f64>,
+    /// Exempt Harvest lifeforce and Rogue's Markers from `price_threshold`;
+    /// applies from the next Snapshot.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exempt_lifeforce_and_markers: Option<bool>,
     /// Percent, 50..=150 in steps of 10; applies at once (F17).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ui_scale: Option<u32>,
