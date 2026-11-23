@@ -19,7 +19,7 @@ Desktop client of Exilence CE: tracks the net worth of your Path of Exile stash,
 
 ## Installing
 
-Download the installer for your system from the [releases](../../releases) (betas are marked as prereleases): the Windows `…_x64-setup.exe`, the macOS `…_universal.dmg` (Apple silicon and Intel) or the Linux `…_amd64.AppImage`. The app updates itself; choose **Latest Stable** or **Beta** under **Settings → Release channel**.
+Download the installer for your system from the [releases](../../releases) (betas are marked as prereleases): the Windows `…_x64-setup.exe`, the macOS `…_universal.dmg` (Apple silicon and Intel), or on Linux the `…_amd64.AppImage`, the `…_amd64.deb` (Debian, Ubuntu) or the `…_x86_64.rpm` (Fedora, openSUSE; stable releases only). The app updates itself; choose **Latest Stable** or **Beta** under **Settings → Release channel**. A `.deb` or `.rpm` install asks for your password to install an update, and an `.rpm` install always follows Latest Stable: RPM versions cannot name a beta.
 
 ### macOS: opening the app past Gatekeeper
 
@@ -36,9 +36,13 @@ xattr -dr com.apple.quarantine "/Applications/Exilence CE NG.app"
 
 You do this once; updates keep working without it.
 
+### Arch Linux: AUR
+
+Install [`exilence-ce-bin`](https://aur.archlinux.org/packages/exilence-ce-bin) (the release build) or [`exilence-ce`](https://aur.archlinux.org/packages/exilence-ce) (built from source) with your AUR helper, e.g. `paru -S exilence-ce-bin`. Both follow stable releases, and pacman updates them: the app does not update itself and has no release channel.
+
 ### Linux: glibc 2.39 or newer
 
-The AppImage runs on Linux x64 with glibc 2.39 or newer: Ubuntu 24.04, Fedora 40, Debian 13 and later. `ldd --version` shows yours. Make it executable (`chmod +x Exilence-CE-NG_*_amd64.AppImage`) and start it. If it does not start, install FUSE 2 (`sudo apt install libfuse2t64` on Ubuntu 24.04).
+The AppImage, `.deb` and `.rpm` run on Linux x64 with glibc 2.39 or newer: Ubuntu 24.04, Fedora 40, Debian 13 and later. `ldd --version` shows yours. Make the AppImage executable (`chmod +x Exilence-CE-NG_*_amd64.AppImage`) and start it. If it does not start, install FUSE 2 (`sudo apt install libfuse2t64` on Ubuntu 24.04).
 
 ## Linux troubleshooting
 

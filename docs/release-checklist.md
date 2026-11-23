@@ -173,6 +173,8 @@ One row per item of the Manual column of the per-feature table.
 | F16.4 | **Installers**: Windows `_x64-setup.exe` installs for the current user into a folder you may choose; the macOS `_universal.dmg` runs on Apple silicon and Intel after the README's Gatekeeper steps; the Linux `_amd64.AppImage` starts on glibc 2.39 (Ubuntu 24.04), and after its first start `Exilence-CE-NG` shows with its icon in the desktop's app menu or launcher and starts from there. Betas are marked prerelease. | ☐ | ☐ | ☐ |
 | F16.5 | **README**: the [README](../README.md) install section matches the assets, the Gatekeeper steps work as written, the glibc minimum is stated. | ☐ | ☐ | ☐ |
 | F16.6 | **Release notes**: the draft's notes equal the version's `CHANGELOG.md` section, which What's New shows too. | ☐ | ☐ | ☐ |
+| F16.7 | **`.deb` and `.rpm`**: on Ubuntu 24.04 `sudo apt install ./…_amd64.deb` and, for a stable release, on Fedora `sudo dnf install ./…_x86_64.rpm` install the app; `Exilence-CE-NG` is in the app menu with its icon, a login link from the browser reaches the running app, and an update from the previous release asks for the password, installs and restarts into the new version. The `.rpm` install shows no release channel; a beta draft has no `.rpm`. | — | — | ☐ |
+| F16.8 | **AUR** (stable releases only): after publishing, the release workflow's "Update the AUR packages" job succeeded; on Arch `paru -S exilence-ce-bin` (then, removing it, `exilence-ce`) installs the published version; the app menu entry and a login link work; Settings → Advanced has no release channel, the tray's "Check for Updates…" is disabled and no update banner ever shows. | — | — | ☐ |
 
 ### F17. Settings
 

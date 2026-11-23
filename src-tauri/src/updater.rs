@@ -19,8 +19,17 @@ use crate::scheduler::{Deadline, Scheduler};
 use crate::slot;
 use crate::state::Store;
 
-/// Whether this build checks for updates: release builds only (F16).
-pub const ENABLED: bool = cfg!(not(debug_assertions));
+/// Whether this build checks for updates: release builds that no package
+/// manager updates (F16).
+pub const ENABLED: bool = cfg!(not(debug_assertions)) && !crate::DISTRO_PACKAGE;
+
+/// Whether this copy can choose its release channel (ADR 0006): not a distro
+/// package, which its package manager updates, nor an `.rpm`, which only
+/// stable releases carry because an RPM version cannot hold a prerelease.
+pub fn channel_choice() -> bool {
+    !crate::DISTRO_PACKAGE
+        && tauri::utils::platform::bundle_type() != Some(tauri::utils::config::BundleType::Rpm)
+}
 
 /// Time from the end of one check to the next, in milliseconds.
 pub const CHECK_INTERVAL_MS: i64 = 5 * 60 * 1000;

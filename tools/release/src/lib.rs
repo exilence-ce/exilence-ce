@@ -32,6 +32,8 @@ pub struct Asset {
 pub struct Artifact {
     pub suffix: &'static str,
     pub platforms: &'static [&'static str],
+    /// Only stable releases carry it.
+    pub stable_only: bool,
 }
 
 /// The updater artifacts the release workflow uploads, each with its
@@ -40,21 +42,42 @@ pub const ARTIFACTS: &[Artifact] = &[
     Artifact {
         suffix: "_x64-setup.exe",
         platforms: &["windows-x86_64"],
+        stable_only: false,
     },
     // One universal app for both architectures.
     Artifact {
         suffix: "_universal.app.tar.gz",
         platforms: &["darwin-aarch64", "darwin-x86_64"],
+        stable_only: false,
     },
+    // An installed copy looks up `linux-x86_64-<bundle type>` first, then
+    // `linux-x86_64`, so each Linux package names its own entry.
     Artifact {
         suffix: "_amd64.AppImage",
-        platforms: &["linux-x86_64"],
+        platforms: &["linux-x86_64", "linux-x86_64-appimage"],
+        stable_only: false,
+    },
+    Artifact {
+        suffix: "_amd64.deb",
+        platforms: &["linux-x86_64-deb"],
+        stable_only: false,
+    },
+    // An RPM version cannot hold a prerelease (`2.0.0-beta.1`), so betas
+    // ship no `.rpm`, and an `.rpm` install reads only `latest.json`.
+    Artifact {
+        suffix: "_x86_64.rpm",
+        platforms: &["linux-x86_64-rpm"],
+        stable_only: true,
     },
 ];
 
 /// Installers that are not updater artifacts. A release without them is
-/// still partial.
-pub const INSTALLERS: &[&str] = &["_universal.dmg"];
+/// still partial. The tarball is what the AUR packages install.
+pub const INSTALLERS: &[&str] = &["_universal.dmg", DISTRO_TARBALL];
+
+/// How the distro packages' tarball ends: the binary built with
+/// `distro-package` in the layout of `packaging/linux/stage.sh`.
+pub const DISTRO_TARBALL: &str = "_x86_64-linux.tar.gz";
 
 /// What a signature asset's name adds to its artifact's name.
 pub const SIGNATURE_SUFFIX: &str = ".sig";
@@ -137,9 +160,18 @@ impl Release {
             .then_some(asset)
     }
 
+    /// The updater artifacts this release carries: a prerelease lacks the
+    /// stable-only ones.
+    fn artifacts(&self) -> impl Iterator<Item = &'static Artifact> {
+        let prerelease = tag_version(&self.tag_name).is_some_and(|v| !v.pre.is_empty());
+        ARTIFACTS
+            .iter()
+            .filter(move |a| !(prerelease && a.stable_only))
+    }
+
     /// Every installer and signed updater artifact is fully uploaded.
     pub fn is_complete(&self) -> bool {
-        ARTIFACTS.iter().all(|a| self.signed(a).is_some())
+        self.artifacts().all(|a| self.signed(a).is_some())
             && INSTALLERS.iter().all(|s| self.uploaded(s).is_some())
     }
 }
@@ -211,7 +243,7 @@ pub fn update_file(
         return Err(format!("{tag} is a draft or partly uploaded"));
     }
     let mut platforms = BTreeMap::new();
-    for artifact in ARTIFACTS {
+    for artifact in release.artifacts() {
         let asset = release
             .signed(artifact)
             .ok_or_else(|| format!("{tag} lacks a signed asset"))?;
@@ -250,11 +282,13 @@ mod tests {
         }
     }
 
-    /// A published release with every installer and signed artifact.
+    /// A published release with every installer and signed artifact it
+    /// carries, as the release workflow uploads them.
     fn release(tag: &str) -> Release {
         let version = tag.trim_start_matches('v');
+        let prerelease = version.contains('-');
         let mut assets = Vec::new();
-        for artifact in ARTIFACTS {
+        for artifact in ARTIFACTS.iter().filter(|a| !(prerelease && a.stable_only)) {
             let name = format!("Exilence-CE-NG_{version}{}", artifact.suffix);
             assets.push(asset(tag, &format!("{name}{SIGNATURE_SUFFIX}")));
             assets.push(asset(tag, &name));
@@ -337,30 +371,48 @@ mod tests {
 
     #[test]
     fn f16_update_file_lists_every_platform_with_its_signature() {
-        let release = release("v2.0.0-beta.2");
+        let release = release("v2.1.0");
         let file = update_file(&release, |name| Ok(format!("sig of {name}\n"))).unwrap();
         let json = serde_json::to_value(&file).unwrap();
-        let url = |name: &str| format!("{REPO}/v2.0.0-beta.2/Exilence-CE-NG_2.0.0-beta.2{name}");
+        let url = |name: &str| format!("{REPO}/v2.1.0/Exilence-CE-NG_2.1.0{name}");
         let platform = |name: &str| {
             serde_json::json!({
-                "signature": format!("sig of Exilence-CE-NG_2.0.0-beta.2{name}.sig"),
+                "signature": format!("sig of Exilence-CE-NG_2.1.0{name}.sig"),
                 "url": url(name),
             })
         };
         assert_eq!(
             json,
             serde_json::json!({
-                "version": "2.0.0-beta.2",
-                "notes": "Notes of 2.0.0-beta.2",
+                "version": "2.1.0",
+                "notes": "Notes of 2.1.0",
                 "pub_date": "2026-11-12T10:00:00Z",
                 "platforms": {
                     "darwin-aarch64": platform("_universal.app.tar.gz"),
                     "darwin-x86_64": platform("_universal.app.tar.gz"),
                     "linux-x86_64": platform("_amd64.AppImage"),
+                    "linux-x86_64-appimage": platform("_amd64.AppImage"),
+                    "linux-x86_64-deb": platform("_amd64.deb"),
+                    "linux-x86_64-rpm": platform("_x86_64.rpm"),
                     "windows-x86_64": platform("_x64-setup.exe"),
                 },
             })
         );
+    }
+
+    /// RPM versions cannot hold a prerelease: a beta is complete without an
+    /// `.rpm` and its update file has no RPM entry, a stable release is not.
+    #[test]
+    fn f16_only_stable_releases_carry_an_rpm() {
+        let beta = release("v2.1.0-beta.1");
+        assert!(beta.is_complete());
+        let file = update_file(&beta, |_| Ok("sig".to_owned())).unwrap();
+        assert!(!file.platforms.contains_key("linux-x86_64-rpm"));
+        assert!(file.platforms.contains_key("linux-x86_64-deb"));
+
+        let mut stable = release("v2.1.0");
+        stable.assets.retain(|a| !a.name.contains(".rpm"));
+        assert!(!stable.is_complete());
     }
 
     #[test]

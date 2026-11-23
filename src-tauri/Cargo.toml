@@ -67,6 +67,11 @@ zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
 # SnapshotBody compression (`exilence.proto`); the version tonic uses.
 zstd = "0.14"
 
+[features]
+# Builds for distro packages (AUR, `packaging/`): the package manager updates
+# the app, and the package's desktop entry declares the deep link.
+distro-package = []
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

@@ -705,6 +705,7 @@ fn f16_release_channel_change_takes_effect_after_a_restart() {
         Update {
             channel: ReleaseChannel::Beta,
             state: UpdateState::None,
+            channel_choice: true,
         }
     );
 }

@@ -897,32 +897,35 @@ fn parse_custom_price(value: &str) -> Result<f64, MessageKey> {
 #[component]
 fn AdvancedTab(state: State) -> impl IntoView {
     view! {
-        <Section title=MessageKey::SettingsSectionReleaseChannel>
-            // A channel change takes effect after a restart (F16).
-            <SelectSetting
-                id="release-channel"
-                label=MessageKey::SettingsReleaseChannel
-                help=MessageKey::SettingsReleaseChannelNote
-                max_width=150
-                options=vec![
-                    (
-                        release_channel_value(ReleaseChannel::Latest),
-                        MessageKey::SettingsReleaseChannelLatest,
-                    ),
-                    (
-                        release_channel_value(ReleaseChannel::Beta),
-                        MessageKey::SettingsReleaseChannelBeta,
-                    ),
-                ]
-                value=Signal::derive(move || {
-                    state.settings.with(|s| release_channel_value(s.release_channel).to_owned())
-                })
-                patch=|value| SettingsPatch {
-                    release_channel: Some(parse_release_channel(value)),
-                    ..SettingsPatch::default()
-                }
-            />
-        </Section>
+        // A distro package or an `.rpm` follows one channel (ADR 0006).
+        <Show when=move || state.update.with(|u| u.channel_choice)>
+            <Section title=MessageKey::SettingsSectionReleaseChannel>
+                // A channel change takes effect after a restart (F16).
+                <SelectSetting
+                    id="release-channel"
+                    label=MessageKey::SettingsReleaseChannel
+                    help=MessageKey::SettingsReleaseChannelNote
+                    max_width=150
+                    options=vec![
+                        (
+                            release_channel_value(ReleaseChannel::Latest),
+                            MessageKey::SettingsReleaseChannelLatest,
+                        ),
+                        (
+                            release_channel_value(ReleaseChannel::Beta),
+                            MessageKey::SettingsReleaseChannelBeta,
+                        ),
+                    ]
+                    value=Signal::derive(move || {
+                        state.settings.with(|s| release_channel_value(s.release_channel).to_owned())
+                    })
+                    patch=|value| SettingsPatch {
+                        release_channel: Some(parse_release_channel(value)),
+                        ..SettingsPatch::default()
+                    }
+                />
+            </Section>
+        </Show>
         // WKWebView has no switch (D7); the stored value shows (D16).
         <Show when=|| !is_macos()>
             <Section title=MessageKey::SettingsSectionHardwareAcceleration>

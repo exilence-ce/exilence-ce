@@ -1,0 +1,26 @@
+# Maintainer: Exilence CE <exilencece@gmail.com>
+#
+# Source of the AUR package `exilence-ce-bin`. The release workflow sets
+# pkgver and sha256sums from each stable release and pushes it to the AUR.
+pkgname=exilence-ce-bin
+_pkgname=exilence-ce
+pkgver=2.0.0
+pkgrel=1
+pkgdesc='Net worth tracker for Path of Exile'
+arch=('x86_64')
+url='https://github.com/exilence-ce/exilence-ce'
+license=('AGPL-3.0-only')
+depends=(
+  'cairo' 'dbus' 'gdk-pixbuf2' 'glib2' 'glibc' 'gtk3' 'libgcc' 'libsoup3' 'webkit2gtk-4.1'
+  # Loaded at runtime: the tray icon, links in the browser, the icon theme.
+  'libayatana-appindicator' 'xdg-utils' 'hicolor-icon-theme'
+)
+provides=("$_pkgname")
+conflicts=("$_pkgname")
+options=('!strip' '!debug')
+source=("$url/releases/download/v$pkgver/Exilence-CE-NG_${pkgver}_x86_64-linux.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+  cp -a usr "$pkgdir/"
+}

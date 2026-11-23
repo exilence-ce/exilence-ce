@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Linux packages besides the AppImage: a `.deb` for Debian and Ubuntu and, with stable releases, an `.rpm` for Fedora and openSUSE, both updating themselves like the AppImage (they ask for your password to install an update; an `.rpm` install follows Latest Stable only), and on Arch Linux the AUR packages `exilence-ce-bin` and `exilence-ce`, which follow stable releases and are updated by pacman instead of the app.
+
 ## 2.0.0-beta.1
 
 First beta of Exilence CE 2.0, the successor of Exilence CE 1.x, rebuilt as a native desktop app written in Rust.

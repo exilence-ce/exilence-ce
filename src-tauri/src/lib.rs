@@ -40,7 +40,8 @@ use std::path::Path;
 use std::sync::Arc;
 
 use ipc::slices::{
-    Charts, Group, Items, LoginState, NetWorth, Prices, Profiles, Session, Settings, Status, Update,
+    Charts, Group, Items, LoginState, NetWorth, Prices, Profiles, ReleaseChannel, Session,
+    Settings, Status, Update,
 };
 use ipc::{IpcError, Slices};
 use sqlx::SqlitePool;
@@ -55,6 +56,11 @@ use crate::desktop::Desktop;
 use crate::ggg::Ggg;
 use crate::scheduler::{Deadline, Jitter, Scheduler};
 use crate::state::Pushing;
+
+/// A distro package (AUR) installed this copy: built with `distro-package`.
+/// Its package manager updates it, so the app never does (F16), and its
+/// system-wide desktop entry declares the deep link.
+pub const DISTRO_PACKAGE: bool = cfg!(feature = "distro-package");
 
 /// Registers every command handler on `builder`.
 pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
@@ -208,9 +214,15 @@ pub fn manage<R: Runtime>(
         settings.hardware_acceleration,
     ));
     app.manage(pool);
+    let channel_choice = updater::channel_choice();
     app.manage(state::Store::new(Slices {
         update: Update {
-            channel: settings.release_channel,
+            channel: if channel_choice {
+                settings.release_channel
+            } else {
+                ReleaseChannel::Latest
+            },
+            channel_choice,
             ..Update::default()
         },
         settings,
@@ -375,13 +387,14 @@ pub fn run() {
 fn deep_links(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let deep_link = app.deep_link();
     // Bundles register the scheme on install; this also covers an AppImage
-    // or a development build. macOS registers through the bundle only.
+    // or a development build. macOS registers through the bundle only, a
+    // distro package through its desktop entry (`packaging/linux/`).
     #[cfg(target_os = "linux")]
     if let Err(error) = install_menu_entry(app) {
         log::warn!("cannot write the menu entry: {error}");
     }
     #[cfg(any(windows, target_os = "linux"))]
-    if let Err(error) = deep_link.register_all() {
+    if !DISTRO_PACKAGE && let Err(error) = deep_link.register_all() {
         log::warn!(
             "cannot register the {} scheme: {error}",
             auth::DEEP_LINK_SCHEME

@@ -1,0 +1,42 @@
+# Maintainer: Exilence CE <exilencece@gmail.com>
+#
+# Source of the AUR package `exilence-ce`, built from the release tag. The
+# release workflow sets pkgver and sha256sums from each stable release and
+# pushes it to the AUR.
+pkgname=exilence-ce
+pkgver=2.0.0
+pkgrel=1
+pkgdesc='Net worth tracker for Path of Exile'
+arch=('x86_64')
+url='https://github.com/exilence-ce/exilence-ce'
+license=('AGPL-3.0-only')
+depends=(
+  'cairo' 'dbus' 'gdk-pixbuf2' 'glib2' 'glibc' 'gtk3' 'libgcc' 'libsoup3' 'webkit2gtk-4.1'
+  # Loaded at runtime: the tray icon, links in the browser, the icon theme.
+  'libayatana-appindicator' 'xdg-utils' 'hicolor-icon-theme'
+)
+makedepends=('cargo' 'rust-wasm' 'trunk')
+conflicts=("$pkgname-bin")
+options=('!lto')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$pkgname-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked
+}
+
+build() {
+  cd "$pkgname-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable CARGO_TARGET_DIR=target
+  (cd ui && trunk build --release)
+  # As `tauri build` does: the UI embedded, the updater off (distro-package).
+  cargo build --frozen --release -p exilence-ce-ng \
+    --features tauri/custom-protocol,exilence-ce-ng/distro-package
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  packaging/linux/stage.sh target/release/exilence-ce-ng "$pkgdir"
+}

@@ -518,10 +518,15 @@ pub enum ReleaseChannel {
 /// `update`: the updater (F16).
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Update {
-    /// The channel this run checks: the setting at launch. A changed setting
-    /// takes effect at the next start.
+    /// The channel this run checks: the setting at launch, or Latest Stable
+    /// when this copy cannot choose. A changed setting takes effect at the
+    /// next start.
     pub channel: ReleaseChannel,
     pub state: UpdateState,
+    /// Whether this copy can choose its release channel (F16): not a distro
+    /// package, which its package manager updates, nor an `.rpm`, which only
+    /// stable releases carry (ADR 0006).
+    pub channel_choice: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

@@ -103,4 +103,21 @@ mod tests {
             assert!(entry.lines().any(|l| l == line), "{line} missing:\n{entry}");
         }
     }
+
+    /// The desktop entry of the `.deb`, the `.rpm` and the AUR packages
+    /// opens login links (F1) with the binary they install.
+    #[test]
+    fn f1_package_desktop_entry_opens_deep_links() {
+        let entry = include_str!("../../packaging/linux/exilence-ce-ng.desktop");
+        for line in [
+            "Exec=exilence-ce-ng %u",
+            "Icon=exilence-ce-ng",
+            &format!("MimeType=x-scheme-handler/{DEEP_LINK_SCHEME};"),
+        ] {
+            assert!(entry.lines().any(|l| l == line), "{line} missing:\n{entry}");
+        }
+        // Read as a Handlebars template by Tauri's bundler: nothing in it
+        // may be a placeholder.
+        assert!(!entry.contains("{{"), "{entry}");
+    }
 }

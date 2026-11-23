@@ -45,6 +45,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "linux": {
+      "deb": { "desktopTemplate": "../packaging/linux/exilence-ce-ng.desktop" },
+      "rpm": { "desktopTemplate": "../packaging/linux/exilence-ce-ng.desktop" }
+    },
     "macOS": {
       "signingIdentity": "-"
     },

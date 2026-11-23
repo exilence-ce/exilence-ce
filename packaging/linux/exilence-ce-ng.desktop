@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Exilence-CE-NG
+Comment=Net worth tracker for Path of Exile
+Exec=exilence-ce-ng %u
+Icon=exilence-ce-ng
+Categories=Game;
+StartupWMClass=Exilence-ce-ng
+Terminal=false
+MimeType=x-scheme-handler/exilence-ce-ng;

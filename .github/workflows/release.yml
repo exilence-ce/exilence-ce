@@ -2,9 +2,11 @@ name: Release
 
 # ADR 0003. A `v*` tag checks the update signing key, runs the tests on
 # Windows and macOS (os-tests.yml), then builds the Windows installer, the
-# universal macOS `.dmg` and the Linux AppImage into a draft release. Publishing a release rewrites `latest.json` and `beta.json`
-# on the fixed prerelease `updater`. The repository is always
-# `github.repository` (`GH_REPO` for `gh`), never a literal name.
+# universal macOS `.dmg`, and the Linux AppImage, `.deb`, `.rpm` and the
+# distro packages' tarball into a draft release. Publishing a release rewrites
+# `latest.json` and `beta.json` on the fixed prerelease `updater`; publishing a
+# stable one also updates the AUR packages (packaging/aur/). The repository is
+# always `github.repository` (`GH_REPO` for `gh`), never a literal name.
 #
 # A manual run with `dry_run` runs the tests and the three builds from any
 # branch without secrets, signing, draft or publishing: the installers go up as
@@ -163,14 +165,25 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ !inputs.dry_run && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ !inputs.dry_run && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
-          ARGS: ${{ matrix.os == 'windows-latest' && '--bundles nsis' || matrix.os == 'macos-latest' && '--target universal-apple-darwin --bundles app,dmg' || '--bundles appimage' }}
+          ARGS: ${{ matrix.os == 'windows-latest' && '--bundles nsis' || matrix.os == 'macos-latest' && '--target universal-apple-darwin --bundles app,dmg' || '--bundles appimage,deb,rpm' }}
           CONFIG: '{"bundle":{"createUpdaterArtifacts":${{ !inputs.dry_run }}}}'
           # linuxdeploy runs without FUSE.
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
           read -ra args <<< "$ARGS"
+          # An RPM version cannot hold a prerelease: betas ship no `.rpm`
+          # (tools/release, ADR 0006).
+          version=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -n 1)
+          if [ "$RUNNER_OS" = Linux ] && [[ $version == *-* ]]; then
+            args=(--bundles appimage,deb)
+          fi
           npx --yes @tauri-apps/cli@2.12.4 build "${args[@]}" \
             --config "$CONFIG"
+      # The distro packages' binary (packaging/): the package manager updates
+      # it. Built after the bundles, which keep their own copy.
+      - name: Build the distro binary
+        if: runner.os == 'Linux'
+        run: npx --yes @tauri-apps/cli@2.12.4 build --no-bundle --features distro-package
       # Names end as tools/release expects (ARTIFACTS, INSTALLERS); each
       # update artifact goes up with its signature.
       - name: Stage
@@ -212,6 +225,16 @@ jobs:
             Linux)
               image=$(one target/release/bundle/appimage/*.AppImage)
               stage "$image" _amd64.AppImage signed
+              deb=$(one target/release/bundle/deb/*.deb)
+              stage "$deb" _amd64.deb signed
+              # Stable releases only (see Build).
+              for rpm in target/release/bundle/rpm/*.rpm; do
+                stage "$rpm" _x86_64.rpm signed
+              done
+              # What the AUR packages install (packaging/aur/).
+              packaging/linux/stage.sh target/release/exilence-ce-ng tarball
+              cp LICENSE tarball/
+              tar -czf "dist/Exilence-CE-NG_${VERSION}_x86_64-linux.tar.gz" -C tarball .
               ;;
           esac
           ls -l dist
@@ -266,4 +289,50 @@ jobs:
             elif grep -qx "$channel.json" <<< "$current"; then
               gh release delete-asset updater "$channel.json" --yes
             fi
+          done
+
+  # The AUR packages follow stable releases only. Each PKGBUILD in
+  # packaging/aur/ gets this version and fresh checksums, then goes to the
+  # AUR with its .SRCINFO. The release must be downloadable: a public repo.
+  aur:
+    name: Update the AUR packages
+    needs: update-files
+    if: >-
+      github.event_name == 'release'
+      && startsWith(github.event.release.tag_name, 'v')
+      && !github.event.release.prerelease
+    runs-on: ubuntu-24.04
+    container: archlinux:base-devel
+    # Holds AUR_SSH_PRIVATE_KEY, the key of the AUR account that maintains
+    # both packages.
+    environment: release
+    steps:
+      - run: pacman -Syu --noconfirm --needed git openssh pacman-contrib
+      - uses: actions/checkout@v7
+      - name: Push the PKGBUILDs
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          version=${TAG#v}
+          key=$(mktemp)
+          trap 'rm -f "$key"' EXIT
+          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > "$key"
+          known=$(mktemp)
+          # The AUR's published host key (SHA256:RFzBCUItH9LZS0cKB5UE6ceAYhBD5C8GeOBip8Z11+4).
+          echo "aur.archlinux.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEuBKrPzbawxA/k2g6NcyV5jmqwJ2s+zpgZGZ7tpLIcN" > "$known"
+          export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o UserKnownHostsFile=$known"
+          git config --global user.name "Exilence CE"
+          git config --global user.email "exilencece@gmail.com"
+          # makepkg refuses to run as root.
+          useradd --create-home builder
+          for package in exilence-ce-bin exilence-ce; do
+            git clone "ssh://aur@aur.archlinux.org/$package.git" "aur/$package"
+            cp "packaging/aur/$package/PKGBUILD" "aur/$package/"
+            sed -i "s/^pkgver=.*/pkgver=$version/; s/^pkgrel=.*/pkgrel=1/" "aur/$package/PKGBUILD"
+            chown -R builder "aur/$package"
+            su builder -c "cd 'aur/$package' && updpkgsums && makepkg --printsrcinfo > .SRCINFO"
+            git -C "aur/$package" add PKGBUILD .SRCINFO
+            git -C "aur/$package" commit -m "Update to $version"
+            git -C "aur/$package" push origin HEAD:master
           done
