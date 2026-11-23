@@ -975,7 +975,11 @@ fn covens_viscera_matches_by_normalized_implicit_variant() {
     let prices: Vec<_> = overview.price_entries("Viscera").collect();
     let table = PriceTable::new(&prices, &PricingOptions::default(), &[]);
 
-    let mut spectres = item("Coven Queen's Crown", "Coven Queen's Crown", frame_type::VISCERA);
+    let mut spectres = item(
+        "Coven Queen's Crown",
+        "Coven Queen's Crown",
+        frame_type::VISCERA,
+    );
     spectres.implicit_mods = vec![ItemMod {
         description: "+1 to maximum number of Spectres".into(),
     }];
@@ -1000,7 +1004,11 @@ fn covens_viscera_matches_by_normalized_implicit_variant() {
     assert_eq!(table.unit_price(&def), Some(420.0));
 
     // Empty implicit mods must not match.
-    let empty = item("Coven Queen's Crown", "Coven Queen's Crown", frame_type::VISCERA);
+    let empty = item(
+        "Coven Queen's Crown",
+        "Coven Queen's Crown",
+        frame_type::VISCERA,
+    );
     assert_eq!(table.unit_price(&ItemDefinition::from_item(&empty)), None);
 }
 
@@ -1020,11 +1028,17 @@ fn wombgift_matches_highest_item_level_bracket_not_above() {
 
     let mut low = currency("Ancient Wombgift");
     low.ilvl = 68;
-    assert_eq!(table.unit_price(&ItemDefinition::from_item(&low)), Some(118.5));
+    assert_eq!(
+        table.unit_price(&ItemDefinition::from_item(&low)),
+        Some(118.5)
+    );
 
     let mut high = currency("Ancient Wombgift");
     high.ilvl = 85;
-    assert_eq!(table.unit_price(&ItemDefinition::from_item(&high)), Some(18.0));
+    assert_eq!(
+        table.unit_price(&ItemDefinition::from_item(&high)),
+        Some(18.0)
+    );
 
     let mut below = currency("Ancient Wombgift");
     below.ilvl = 39;

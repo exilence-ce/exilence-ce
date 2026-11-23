@@ -297,7 +297,11 @@ mod tests {
 
         let viscera_a = ItemDefinition {
             variant: "+# to maximum number of Spectres".to_owned(),
-            ..definition("Coven Queen's Crown", "Coven Queen's Crown", frame_type::VISCERA)
+            ..definition(
+                "Coven Queen's Crown",
+                "Coven Queen's Crown",
+                frame_type::VISCERA,
+            )
         };
         let viscera_b = ItemDefinition {
             variant: "#% reduced bonuses gained from Equipped Boots".to_owned(),
