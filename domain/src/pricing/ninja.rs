@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use serde::Deserialize;
 
 use super::{PriceEntry, PriceKey, Sparkline};
-use crate::item_definition::frame_type;
+use crate::item_definition::{frame_type, viscera_variant};
 
 /// The endpoint family an overview type is requested from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,7 +24,8 @@ pub enum OverviewKind {
 
 pub const CURRENCY_TYPES: [&str; 2] = ["Currency", "Fragment"];
 
-pub const ITEM_TYPES: [&str; 17] = [
+pub const ITEM_TYPES: [&str; 20] = [
+    "Viscera",
     "Incubator",
     "SkillGem",
     "UniqueMap",
@@ -42,15 +43,18 @@ pub const ITEM_TYPES: [&str; 17] = [
     "Vial",
     "Invitation",
     "Memory",
+    "Corpse",
+    "Wombgift",
 ];
 
 /// Currency and Fragment again: the stash overview lacks some of them (e.g.
 /// Exalted Orb); [`dedupe`] removes the overlap.
-pub const EXCHANGE_TYPES: [&str; 16] = [
+pub const EXCHANGE_TYPES: [&str; 19] = [
     "Currency",
     "Fragment",
     "DivinationCard",
     "Scarab",
+    "Thread",
     "Essence",
     "Oil",
     "Fossil",
@@ -60,6 +64,8 @@ pub const EXCHANGE_TYPES: [&str; 16] = [
     "Tattoo",
     "Omen",
     "AllflameEmber",
+    "Ducat",
+    "EnshroudingCrystal",
     "Runegraft",
     "DjinnCoin",
     "Astrolabe",
@@ -171,7 +177,12 @@ impl ItemOverview {
         overview_type: &'a str,
     ) -> impl Iterator<Item = PriceEntry> + 'a {
         self.lines.iter().map(move |line| {
-            let variant = line.variant.clone().unwrap_or_default();
+            let raw_variant = line.variant.as_deref().unwrap_or_default();
+            let variant = if overview_type == "Viscera" {
+                viscera_variant(raw_variant)
+            } else {
+                raw_variant.to_owned()
+            };
             let count = line.count.unwrap_or(0);
             let sparkline = line.spark_line.as_ref().or(line.sparkline.as_ref());
             PriceEntry {
@@ -358,6 +369,7 @@ fn type_slug(overview_type: &str) -> String {
         .replace("accessorys", "accessories")
         .replace("currencys", "currency")
         .replace("fragmentss", "fragments")
+        .replace("visceras", "viscera")
 }
 
 /// Removes entries that several overviews share (legacy `dedupePrices`),
