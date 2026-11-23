@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.0-beta.2
 
 - Linux packages besides the AppImage: a `.deb` for Debian and Ubuntu and, with stable releases, an `.rpm` for Fedora and openSUSE, both updating themselves like the AppImage (they ask for your password to install an update; an `.rpm` install follows Latest Stable only).
 
