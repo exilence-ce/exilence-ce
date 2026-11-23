@@ -1,0 +1,19 @@
+[workspace]
+resolver = "3"
+members = ["wire", "domain", "ninja", "ipc", "src-tauri", "ui", "tools/release", "tools/ninja-drift"]
+
+[workspace.package]
+# The app's version: the next release's. A `v*` tag must name it, and
+# CHANGELOG.md must have its section (release workflow).
+version = "2.0.0-beta.1"
+edition = "2024"
+publish = false
+
+[workspace.lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+
+# Debug info for the Tauri tree fills the runner's disk (and the cache); this
+# profile covers `cargo test` too.
+[profile.dev]
+debug = 0

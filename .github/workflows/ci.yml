@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install WebKitGTK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --locked
+      # The webview runs `ui` (and `ipc` through it) as WASM.
+      - run: cargo clippy -p ui -p ipc --target wasm32-unknown-unknown --locked
+      - run: cargo test --workspace --locked
+      # os-tests.yml runs tools/stress.sh only on Windows and macOS: run it
+      # here once, under this job's env, so a broken script shows on every PR.
+      - run: tools/stress.sh settings_page::f17_reset_data 1 1
+      - name: Released changelog entries are unchanged
+        # `--tags`, not a `v*` refspec: a refspec that matches no tag fails
+        # the fetch, as before the first release.
+        run: |
+          git fetch --quiet --depth=1 --tags origin
+          tools/check-changelog.sh
+
+  # A bundled build serves the embedded assets under the CSP, which a devUrl
+  # run never does: its window must come up (tools/ui-smoke.sh).
+  ui-smoke:
+    name: UI smoke (bundled build)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install WebKitGTK, the tray library and a virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev xvfb dbus
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ui-smoke
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: trunk
+      - run: trunk build --release
+        working-directory: ui
+      - run: cargo build -p exilence-ce-ng --features tauri/custom-protocol --locked
+      - run: dbus-run-session -- xvfb-run -a tools/ui-smoke.sh target/debug/exilence-ce-ng
+
+  # Windows and macOS code (paths, tray, deep links) must compile on every PR;
+  # their tests run only in os-tests.yml. `cargo check` links nothing, but
+  # `ring`'s build script still compiles C with the target's tools, which a
+  # Linux runner lacks (MSVC `cl`/`lib`, Apple's `cc`). The C compiler is
+  # therefore `true` and, for MSVC, the archiver a script that creates the
+  # `-out:` file: the check never reads the objects.
+  cross-check:
+    name: Check (${{ matrix.target }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-pc-windows-msvc, x86_64-apple-darwin]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      # tauri-winres compiles the Windows resources with `llvm-rc` when the
+      # host is not Windows.
+      - name: Install llvm-rc
+        if: contains(matrix.target, 'windows')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends llvm
+      - name: Stub the C toolchain
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          cat > "$RUNNER_TEMP/noar" <<'SCRIPT'
+          #!/bin/sh
+          for a; do case $a in -out:*) touch "${a#-out:}";; esac; done
+          SCRIPT
+          chmod +x "$RUNNER_TEMP/noar"
+          var=${TARGET//-/_}
+          echo "CC_$var=true" >> "$GITHUB_ENV"
+          echo "AR_$var=$RUNNER_TEMP/noar" >> "$GITHUB_ENV"
+      - run: cargo check --workspace --all-targets --locked --target "$TARGET"
+        env:
+          TARGET: ${{ matrix.target }}

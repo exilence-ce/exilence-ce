@@ -1,0 +1,1 @@
+{"lowConfidencePricing":false,"autoSnapshotting":true,"isHardwareAccelerationEnabled":true,"releaseChannel":"latest","priceThreshold":0.5,"totalPriceThreshold":0,"currency":"exalt","autoSnapshotInterval":120000,"uiScale":87,"logPath":"/home/foo/Client.txt","appExitAction":"minimize-to-tray"}

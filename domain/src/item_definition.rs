@@ -1,0 +1,174 @@
+//! What an item is, independent of stack size and price: the content of the
+//! wire `ItemDefinition` without its id. Attributes come from the GGG item
+//! (D1), derived as legacy `mapItemsToPricedItems` does
+//! (`exilence-ce-legacy/src/utils/item.utils.ts:52-121`), except where D29–D31 fix it.
+//!
+//! `domain` does not depend on `wire` (it pulls in tonic and tokio), so the
+//! app maps this to `wire::v1::ItemDefinition` and hashes it there.
+
+use crate::ggg::{Item, ItemMod, ItemProperty};
+
+/// Fields mirror `wire::v1::ItemDefinition` (minus `id`); identical items
+/// have equal definitions, so one row per definition merges them (F3).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
+pub struct ItemDefinition {
+    /// Legacy-derived name: base type for non-unique maps, the name alone for
+    /// uniques, name and type line otherwise.
+    pub name: String,
+    pub type_line: String,
+    pub frame_type: u32,
+    pub icon: String,
+    /// Seed tier for seeds, item level otherwise.
+    pub ilvl: u32,
+    /// Map tier, 0 otherwise.
+    pub tier: u32,
+    pub links: u32,
+    pub sockets: u32,
+    pub quality: u32,
+    pub level: u32,
+    pub variant: String,
+    pub corrupted: bool,
+    pub elder: bool,
+    pub shaper: bool,
+    pub blighted: bool,
+    pub beast: bool,
+}
+
+/// GGG frame types legacy pricing tells apart.
+pub mod frame_type {
+    pub const NORMAL: u32 = 0;
+    pub const MAGIC: u32 = 1;
+    pub const RARE: u32 = 2;
+    pub const UNIQUE: u32 = 3;
+    pub const GEM: u32 = 4;
+    pub const CURRENCY: u32 = 5;
+    pub const DIVINATION_CARD: u32 = 6;
+    pub const PROPHECY: u32 = 8;
+    pub const RELIC: u32 = 9;
+    pub const ALLFLAME_EMBER: u32 = 11;
+}
+
+const BEAST_DESCRIPTION: &str = "Right-click to add this to your bestiary.";
+
+impl ItemDefinition {
+    /// Derives the definition of a GGG item.
+    pub fn from_item(item: &Item) -> Self {
+        let unique = item.frame_type == frame_type::UNIQUE;
+        let tier = property(&item.properties, |name| name == "Map Tier")
+            .map_or(0, |text| text.trim().parse().unwrap_or(0));
+        let name = if tier != 0 && !unique {
+            item.base_type.clone()
+        } else {
+            // D29: a Filled Coffin keeps this name (its type line); legacy
+            // named it after its first implicit mod.
+            item_name(&item.name, (!unique).then_some(item.type_line.as_str()))
+        };
+        let seed = item.frame_type == frame_type::CURRENCY && item.type_line.contains(" Seed");
+        let ilvl = if seed {
+            property_int(&item.properties, |name| name.contains("Spawns a Level"))
+        } else {
+            item.ilvl
+        };
+        Self {
+            ilvl,
+            tier,
+            links: links(item),
+            sockets: item.sockets.len() as u32,
+            quality: property_int(&item.properties, |name| name == "Quality"),
+            level: property_int(&item.properties, |name| name == "Level"),
+            variant: variant(item),
+            corrupted: item.corrupted,
+            elder: item.elder || mentions(&item.implicit_mods, "Elder"),
+            shaper: item.shaper || mentions(&item.implicit_mods, "Shaper"),
+            blighted: item.type_line.contains("Blighted "),
+            beast: item.descr_text.as_deref() == Some(BEAST_DESCRIPTION),
+            name,
+            type_line: item.type_line.clone(),
+            frame_type: item.frame_type,
+            icon: item.icon.clone(),
+        }
+    }
+}
+
+/// Legacy `getItemName`: the name, followed by the type line when given,
+/// without GGG's set markup.
+fn item_name(name: &str, type_line: Option<&str>) -> String {
+    let mut joined = name.to_owned();
+    if let Some(type_line) = type_line.filter(|t| !t.is_empty()) {
+        joined.push(' ');
+        joined.push_str(type_line);
+    }
+    joined
+        .replacen("<<set:MS>><<set:M>><<set:S>>", "", 1)
+        .trim()
+        .to_owned()
+}
+
+/// The first value of the first property `is` accepts.
+fn property(properties: &[ItemProperty], is: impl Fn(&str) -> bool) -> Option<&str> {
+    properties
+        .iter()
+        .find(|p| is(&p.name))
+        .and_then(ItemProperty::first_value)
+}
+
+/// A property's leading integer as JavaScript's `parseInt` reads it
+/// (`+20%` is 20, `20 (Max)` is 20); 0 when absent or unreadable.
+fn property_int(properties: &[ItemProperty], is: impl Fn(&str) -> bool) -> u32 {
+    property(properties, is).map_or(0, |text| {
+        let text = text.trim_start();
+        let text = text.strip_prefix('+').unwrap_or(text);
+        let end = text
+            .find(|c: char| !c.is_ascii_digit())
+            .unwrap_or(text.len());
+        text[..end].parse().unwrap_or(0)
+    })
+}
+
+/// The size of the largest linked socket group (legacy `getLinks`).
+fn links(item: &Item) -> u32 {
+    let mut counts: Vec<(u32, u32)> = Vec::new();
+    for socket in &item.sockets {
+        match counts.iter_mut().find(|(group, _)| *group == socket.group) {
+            Some((_, count)) => *count += 1,
+            None => counts.push((socket.group, 1)),
+        }
+    }
+    counts
+        .into_iter()
+        .map(|(_, count)| count)
+        .max()
+        .unwrap_or(0)
+}
+
+fn mentions(mods: &[ItemMod], text: &str) -> bool {
+    mods.iter().any(|m| m.description.contains(text))
+}
+
+/// Legacy `getItemVariant`, fixed for D30 and D31. Legacy's abyssal-socket
+/// variants compare the name joined with the type line against a bare
+/// unique name, so they never apply and are left out.
+fn variant(item: &Item) -> String {
+    // D30: a watchstone's variant is its uses remaining, the mod's first word.
+    if let Some(uses) = item
+        .explicit_mods
+        .iter()
+        .find(|m| m.description.contains("uses remaining"))
+    {
+        return uses
+            .description
+            .split(' ')
+            .next()
+            .unwrap_or_default()
+            .to_owned();
+    }
+    // D31: an Impresence's variant is the damage type its explicit mods name.
+    if item_name(&item.name, None) == "Impresence" {
+        for damage in ["Lightning", "Fire", "Cold", "Physical", "Chaos"] {
+            if mentions(&item.explicit_mods, &format!("{damage} Damage")) {
+                return damage.to_owned();
+            }
+        }
+    }
+    String::new()
+}

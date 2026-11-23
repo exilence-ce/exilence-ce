@@ -1,0 +1,59 @@
+name: OS tests
+
+# The tests on Windows and macOS; Linux is tested on every PR (ci.yml). Run it
+# by hand (workflow_dispatch, any branch: `gh workflow run os-tests.yml --ref
+# <branch>`) before merging anything platform-specific; release.yml calls it
+# before building. With `rounds` set, it stress-runs the core tests instead
+# (tools/stress.sh) and names every test that failed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: Runner
+        type: choice
+        options: [both, windows-latest, macos-latest]
+        default: both
+      rounds:
+        description: Stress rounds of the core tests (0 runs the whole workspace once)
+        type: number
+        default: 0
+      copies:
+        description: Core test binaries run at once per round
+        type: number
+        default: 16
+      filter:
+        description: Core test name filter for a stress run (empty runs them all)
+        type: string
+        default: ""
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        default: both
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.os == 'windows-latest' && '["windows-latest"]' || inputs.os == 'macos-latest' && '["macos-latest"]' || '["windows-latest","macos-latest"]') }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      # Every failing test binary, not only the first: these OSes run only here.
+      - if: ${{ !(inputs.rounds > 0) }}
+        run: cargo test --workspace --locked --no-fail-fast
+      - if: ${{ inputs.rounds > 0 }}
+        shell: bash
+        env:
+          FILTER: ${{ inputs.filter }}
+          COPIES: ${{ inputs.copies }}
+          ROUNDS: ${{ inputs.rounds }}
+        run: tools/stress.sh "$FILTER" "$COPIES" "$ROUNDS"

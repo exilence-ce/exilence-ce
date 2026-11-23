@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Exilence CE NG</title>
+    <script>
+      // Until the WASM runs, the panic hook cannot report anything: send CSP
+      // violations and page errors to the core's log (F20), so a blank window
+      // leaves its cause in exilence-ce-ng.log.
+      (() => {
+        const log = (message) =>
+          window.__TAURI__?.core
+            .invoke("log", { level: "error", message })
+            .catch(() => {});
+        addEventListener("securitypolicyviolation", (e) =>
+          log(`CSP ${e.effectiveDirective} blocked ${e.blockedURI}`),
+        );
+        addEventListener("error", (e) =>
+          log(`page error: ${e.message} (${e.filename}:${e.lineno})`),
+        );
+        addEventListener("unhandledrejection", (e) =>
+          log(`unhandled rejection: ${e.reason}`),
+        );
+      })();
+    </script>
+    <link data-trunk rel="css" href="style.css" />
+    <link data-trunk rel="copy-file" href="assets/kofi_button_stroke.webp" />
+    <link data-trunk rel="rust" data-bin="ui" />
+  </head>
+  <body></body>
+</html>

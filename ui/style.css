@@ -1,0 +1,2919 @@
+/* Exilence CE look (legacy `exilence-theme.tsx`, `Header.styles.ts`,
+   `NavigationMenu.styles.ts`). Inline styles are blocked by the CSP. */
+
+:root {
+  --title-bar-height: 35px;
+  --nav-width: 240px;
+  --nav-collapsed-width: 57px;
+  --background: #151515;
+  --paper: #202020;
+  --title-bar: #000;
+  --text: #fff;
+  --text-secondary: #c2c2c2;
+  --text-disabled: rgba(255, 255, 255, 0.5);
+  --primary-main: #a31545;
+  --primary-dark: #720e30;
+  --primary-light: #e91e63;
+  --primary-lighter: #ff2e75;
+  --error-dark: #c62828;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--text);
+  font-family: Roboto, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.icon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+/* Title bar */
+
+.title-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  height: var(--title-bar-height);
+  padding-left: 16px;
+  background: var(--title-bar);
+  user-select: none;
+  position: relative;
+  z-index: 3;
+}
+
+.title-bar .title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--primary-light);
+  white-space: nowrap;
+}
+
+.title-bar .version {
+  font-size: 0.8rem;
+  color: var(--text-disabled);
+  white-space: nowrap;
+}
+
+.title-bar .update-banner {
+  font-size: 0.8rem;
+  color: #20cc76;
+  white-space: nowrap;
+}
+
+.title-bar .update-banner:hover {
+  text-decoration: underline;
+}
+
+.title-bar .spacer {
+  flex: 1;
+  align-self: stretch;
+}
+
+.title-bar .kofi {
+  display: flex;
+  align-items: center;
+  margin: 0 8px;
+  padding: 1px 3px;
+  background: #fff;
+}
+
+.title-bar .kofi img {
+  height: 21px;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: var(--title-bar-height);
+}
+
+.control:hover,
+.control.active {
+  background: var(--paper);
+}
+
+.control.close:hover {
+  background: var(--error-dark);
+}
+
+.control.support .icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Support panel */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+}
+
+.support-panel {
+  position: fixed;
+  top: var(--title-bar-height);
+  right: 120px;
+  z-index: 5;
+  min-width: 200px;
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+  background: var(--paper);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+}
+
+.support-panel button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 16px;
+}
+
+.support-panel button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.support-panel .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--primary-lighter);
+}
+
+/* Body: navigation drawer and the current view */
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.nav-drawer {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--nav-collapsed-width);
+  overflow-x: hidden;
+  white-space: nowrap;
+  background: var(--background);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  transition: width 195ms cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.nav-drawer.open {
+  width: var(--nav-width);
+  transition-duration: 225ms;
+}
+
+.nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.nav-drawer.open .nav-header {
+  justify-content: flex-end;
+  padding-right: 8px;
+}
+
+.nav-header .control {
+  height: 40px;
+  border-radius: 50%;
+}
+
+.nav-header .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.nav-drawer a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Legacy's ListItem: 48 px rows, the current one in primary.main at the
+   selected opacity (0.16). */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  min-height: 48px;
+  padding: 8px 16px;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-drawer a[aria-current="page"] .nav-item {
+  background: rgba(163, 21, 69, 0.16);
+}
+
+.nav-drawer a[aria-current="page"] .nav-item:hover {
+  background: rgba(163, 21, 69, 0.24);
+}
+
+.nav-item .icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 16px;
+}
+
+/* Settings (F17) as legacy's `SettingsTabs`: vertical tabs left of a panel
+   of overline-titled sections, their settings side by side, each a label,
+   a control and its help (MUI `FormControl`). */
+
+.settings {
+  display: flex;
+  min-height: 100%;
+}
+
+.settings-tabs {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  min-width: 160px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.settings-tabs button {
+  min-height: 48px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.02857em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* MUI's indicator: primary.light along the selected tab's right edge. */
+.settings-tabs button.selected {
+  color: var(--primary-main);
+  box-shadow: inset -2px 0 var(--primary-light);
+}
+
+.settings-panel {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+}
+
+.settings-requires-snapshot {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.57;
+  color: var(--text-secondary);
+}
+
+.settings-section {
+  margin-bottom: 40px;
+}
+
+/* MUI's overline. */
+.settings-section h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 2.66;
+  letter-spacing: 0.08333em;
+  text-transform: uppercase;
+}
+
+/* MUI's Grid with spacing 5. */
+.settings-section-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 40px;
+  margin-top: 16px;
+}
+
+.setting {
+  display: flex;
+  flex-direction: column;
+  max-width: 400px;
+}
+
+/* MUI's FormLabel. */
+.setting-label {
+  font-size: 16px;
+  line-height: 1.4375em;
+  color: var(--text-secondary);
+}
+
+/* MUI's FormHelperText. */
+.helper-text {
+  margin: 3px 0 0;
+  font-size: 12px;
+  line-height: 1.66;
+  letter-spacing: 0.03333em;
+  color: var(--text-secondary);
+}
+
+.helper-text:empty {
+  display: none;
+}
+
+.helper-text.error {
+  color: #f44336;
+}
+
+.setting .checkbox-field {
+  margin-top: 6px;
+  color: var(--text);
+}
+
+/* MUI's standard Input: underlined, 2 px on hover and in the primary
+   colour while focused, dotted while disabled. */
+.standard-field {
+  margin: 8px 0;
+  box-shadow: inset 0 -1px rgba(255, 255, 255, 0.7);
+}
+
+.standard-field:hover:not(.disabled) {
+  box-shadow: inset 0 -2px #fff;
+}
+
+.standard-field:focus-within {
+  box-shadow: inset 0 -2px var(--primary-main);
+}
+
+.standard-field.error,
+.standard-field.error:hover {
+  box-shadow: inset 0 -2px #f44336;
+}
+
+.standard-field.disabled {
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.7);
+  box-shadow: none;
+}
+
+.standard-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 0 5px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.4375em;
+  color: var(--text);
+  background: none;
+  border: 0;
+  outline: none;
+}
+
+.standard-field.disabled input {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* The select stretches to its label, up to the setting's max-width;
+   MUI's `label + .MuiInput-root` spacing. */
+.setting-select .standard-select {
+  min-width: 0;
+  max-width: none;
+  margin: 16px 0 0;
+  font-size: 16px;
+}
+
+/* Legacy's SliderSetting: icon, slider, percent field and reset. */
+.setting.scale-setting {
+  width: 400px;
+}
+
+.scale-controls {
+  display: flex;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.scale-controls > .icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin-right: 16px;
+}
+
+/* MUI's Slider: a rail at 38 % filled up to the thumb (the fill's width
+   comes from the view as `background-size`). */
+.slider {
+  flex: none;
+  width: 120px;
+  height: 4px;
+  margin: 0 16px 0 0;
+  background: linear-gradient(var(--primary-main), var(--primary-main)) no-repeat
+    rgba(163, 21, 69, 0.38);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--primary-main);
+  border-radius: 50%;
+  transition: box-shadow 150ms;
+  appearance: none;
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--primary-main);
+  border: none;
+  border-radius: 50%;
+}
+
+.slider:hover::-webkit-slider-thumb,
+.slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 8px rgba(163, 21, 69, 0.16);
+}
+
+.standard-field.scale-field {
+  flex: none;
+  width: 42px;
+  margin: 0 16px 0 0;
+}
+
+.scale-field input {
+  padding: 3px 0 4px;
+}
+
+/* MUI's small contained primary button. */
+.settings .contained {
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.75;
+  letter-spacing: 0.02857em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--primary-main);
+  border-radius: 4px;
+  box-shadow:
+    0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+}
+
+.settings .contained:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.settings .contained:disabled {
+  color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  cursor: default;
+}
+
+.setting-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Legacy's `Box mt={2}` around the button's helper text. */
+.button-setting .helper-text {
+  margin-top: 19px;
+}
+
+/* Settings → Prices (F6): the price table looks like the Net worth item
+   table, with legacy's small outlined league select. */
+.settings-section-body > .price-table {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.item-table.price-table table {
+  table-layout: auto;
+}
+
+.item-table.price-table th:first-child {
+  width: 64px;
+}
+
+/* The Name column takes what the others leave and cuts long names, so
+   the table fits its width. */
+.item-table.price-table th:nth-child(2),
+.item-table.price-table td:nth-child(2) {
+  width: 30%;
+  max-width: 0;
+}
+
+.price-league-select {
+  width: 200px;
+  margin-left: auto;
+}
+
+.price-league-select .outlined-field {
+  min-height: 40px;
+}
+
+.price-league-select .outlined-field .select-display {
+  padding: 7.5px 32px 7.5px 14px;
+}
+
+.price-league-select .outlined-field > label {
+  background: var(--background);
+}
+
+.item-table .custom-price {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+/* Login (F1) */
+
+.login {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 340px;
+  margin: 80px auto 0;
+}
+
+.login h1 {
+  margin: 0 0 12px;
+  font-size: 1.4rem;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--primary-light);
+  text-align: center;
+}
+
+.login label,
+.login .hint {
+  color: var(--text-secondary);
+}
+
+.login .hint {
+  margin: 12px 0 0;
+  font-size: 0.85rem;
+}
+
+.login select {
+  padding: 6px 8px;
+  font: inherit;
+  color: var(--text);
+  background: var(--paper);
+  border: 1px solid rgba(255, 255, 255, 0.23);
+}
+
+.login .primary {
+  padding: 8px 16px;
+  font-weight: 500;
+  text-transform: uppercase;
+  background: var(--primary-light);
+  border-radius: 4px;
+}
+
+.login .primary:hover {
+  background: var(--primary-lighter);
+}
+
+.login .link {
+  align-self: flex-start;
+  color: var(--primary-lighter);
+  text-decoration: underline;
+}
+
+.login button:disabled,
+.login select:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Toolbar and notification bell (F18) */
+
+/* Legacy's ribbon (`Toolbar.styles.ts`): the primary gradient, sections
+   divided by lines, 28 px icon buttons with 20 px icons. */
+.toolbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: -16px -16px 16px;
+  padding-left: 8px;
+  height: 50px;
+  background: linear-gradient(90deg, #720e30 0%, #a31545 35%, #280310 100%);
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.toolbar-divider {
+  align-self: stretch;
+  border-left: 1px solid #4e4e4e;
+}
+
+.toolbar .toolbar-section .control {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.toolbar .toolbar-section .control .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.toolbar .toolbar-section .control:hover:not(:disabled),
+.toolbar .toolbar-section .control.active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toolbar .toolbar-section .control:disabled {
+  color: rgba(255, 255, 255, 0.3);
+  opacity: 1;
+  cursor: default;
+}
+
+/* Account menu (F1): below the account icon at the right. */
+.account-menu {
+  position: absolute;
+  top: 50px;
+  right: 8px;
+  z-index: 5;
+  min-width: 160px;
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+  background: var(--paper);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+}
+
+.account-menu button {
+  width: 100%;
+  padding: 8px 16px;
+  text-align: left;
+}
+
+.account-menu button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.account-menu button:disabled {
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.toolbar .status {
+  flex: 1;
+  margin-left: 16px;
+  color: var(--text-secondary);
+}
+
+/* The F7 countdown replaces the status while a cooldown runs. */
+.toolbar .rate-limit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+/* F5: poe.ninja has no prices for the price league. F18: in a Group, not
+   connected to the server. */
+.toolbar .no-prices,
+.toolbar .offline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 16px;
+}
+
+/* F20: Debug mode is on. */
+.toolbar .debug-marker {
+  margin-right: 16px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: var(--error-dark);
+  border-radius: 2px;
+}
+
+.bell {
+  position: relative;
+}
+
+.bell .control {
+  position: relative;
+  border-radius: 50%;
+}
+
+/* MUI's badge, in legacy's `secondary.dark`. */
+.badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  border-radius: 10px;
+  background: #000;
+  transform: translate(50%, -50%);
+}
+
+.notification-list {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  z-index: 5;
+  width: 360px;
+  max-height: 480px;
+  overflow: auto;
+  padding: 8px 0;
+  background: var(--paper);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+}
+
+.notification-list h2 {
+  margin: 0;
+  padding: 4px 16px 8px;
+  font-size: 1rem;
+}
+
+.notification-list .empty {
+  margin: 0;
+  padding: 8px 16px;
+  color: var(--text-secondary);
+}
+
+.notification-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notification {
+  display: flex;
+  gap: 12px;
+  padding: 8px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.notification .icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.notification-time,
+.notification-description {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.info .icon {
+  color: #2196f3;
+}
+
+.success .icon {
+  color: #4caf50;
+}
+
+.warning .icon {
+  color: #ff9800;
+}
+
+.error .icon {
+  color: #f44336;
+}
+
+/* Toasts (F18) */
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 6;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 420px;
+  padding: 12px 8px 12px 16px;
+  background: var(--paper);
+  border-left: 4px solid currentColor;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+}
+
+.toast.error {
+  color: #f44336;
+}
+
+.toast-text {
+  flex: 1;
+  color: var(--text);
+}
+
+.toast-title {
+  font-weight: 500;
+}
+
+.toast-description {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.toast .control {
+  width: 28px;
+  height: 28px;
+  color: var(--text);
+}
+
+/* Profile controls and dialogs (F2) */
+
+.profile-area {
+  display: flex;
+  align-items: center;
+}
+
+.dialog select,
+.dialog input[type="text"],
+.dialog input[type="password"],
+.dialog input[type="number"] {
+  padding: 6px 8px;
+  font: inherit;
+  color: var(--text);
+  background: var(--paper);
+  border: 1px solid rgba(255, 255, 255, 0.23);
+}
+
+.profile-area button:disabled,
+.dialog button:disabled,
+.dialog select:disabled,
+.dialog .checkbox.disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Clicks outside a dialog land here and do nothing. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 440px;
+  max-height: calc(100vh - 2 * var(--title-bar-height));
+  overflow: auto;
+  padding: 24px;
+  background: var(--paper);
+  box-shadow: 0 11px 15px rgba(0, 0, 0, 0.6);
+}
+
+.dialog h2 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.dialog p {
+  margin: 0;
+}
+
+.dialog label,
+.dialog .label {
+  color: var(--text-secondary);
+}
+
+.dialog .name-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dialog .name-field input {
+  flex: 1;
+}
+
+.dialog .name-field .control {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.dialog .name-field .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.dialog .field-error {
+  font-size: 0.8rem;
+  color: #f44336;
+}
+
+.dialog .loading {
+  color: var(--text-disabled);
+}
+
+.dialog .warning-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  background: rgba(255, 152, 0, 0.12);
+}
+
+.dialog .warning-note .icon {
+  flex: none;
+  color: #ff9800;
+}
+
+.dialog .checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.dialog .text,
+.dialog .primary {
+  padding: 6px 16px;
+  font-weight: 500;
+  text-transform: uppercase;
+  border-radius: 4px;
+}
+
+.dialog .text {
+  color: var(--primary-lighter);
+}
+
+.dialog .primary {
+  background: var(--primary-light);
+}
+
+.dialog .primary:hover:not(:disabled) {
+  background: var(--primary-lighter);
+}
+
+/* The Profile dialog (F2) as legacy's MUI dialog (`ProfileDialog.tsx`):
+   outlined fields with their label in the border, the stash tab picker as
+   an Autocomplete with chips, MUI checkboxes and buttons. */
+.profile-dialog {
+  width: 500px;
+  gap: 0;
+  padding: 0 24px 20px;
+  border-radius: 4px;
+  box-shadow:
+    0 11px 15px -7px rgba(0, 0, 0, 0.2),
+    0 24px 38px 3px rgba(0, 0, 0, 0.14),
+    0 9px 46px 8px rgba(0, 0, 0, 0.12);
+}
+
+.profile-dialog h2 {
+  margin: 0 -24px;
+  padding: 16px 24px;
+  font-size: 18.4px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.profile-dialog .form-field {
+  display: flex;
+  flex-direction: column;
+  margin: 16px 0 8px;
+}
+
+.outlined-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  font-size: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.23);
+  border-radius: 4px;
+}
+
+.outlined-field:hover:not(:focus-within) {
+  border-color: #fff;
+}
+
+.outlined-field:focus-within {
+  border-color: var(--primary-main);
+  box-shadow: inset 0 0 0 1px var(--primary-main);
+}
+
+.outlined-field.error,
+.outlined-field.error:hover {
+  border-color: #f44336;
+}
+
+.outlined-field.error:focus-within {
+  box-shadow: inset 0 0 0 1px #f44336;
+}
+
+/* The label sits in a gap of the border. */
+.outlined-field > label {
+  position: absolute;
+  top: -9px;
+  left: 9px;
+  max-width: calc(100% - 24px);
+  overflow: hidden;
+  padding: 0 5px;
+  font-size: 12px;
+  line-height: 16px;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: var(--paper);
+  pointer-events: none;
+}
+
+.outlined-field:focus-within > label {
+  color: var(--primary-main);
+}
+
+.outlined-field.error > label {
+  color: #f44336;
+}
+
+.profile-dialog .outlined-field input {
+  flex: 1;
+  min-width: 0;
+  height: 54px;
+  padding: 16.5px 14px;
+  font-size: 16px;
+  line-height: 1.4375em;
+  color: var(--text);
+  background: none;
+  border: 0;
+  outline: none;
+  appearance: none;
+}
+
+.profile-dialog .outlined-field input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* A select (`menu.rs`): its chosen text, caret and menu. */
+.select-display {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.4375em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.outlined-field .select-display {
+  /* MUI's 16.5px, less the border, which MUI draws outside the box. */
+  padding: 15.5px 32px 15.5px 14px;
+}
+
+.select > .icon {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+
+.outlined-field.select > .icon {
+  right: 7px;
+}
+
+.select.open > .icon {
+  transform: rotate(180deg);
+}
+
+.select.disabled .select-display {
+  cursor: default;
+}
+
+.select.disabled > .icon {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.outlined-field.disabled,
+.outlined-field.disabled:hover {
+  color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.outlined-field.disabled > label {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Legacy's standard (underlined) MUI select: the toolbar's profiles. */
+.standard-select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 160px;
+  max-width: 240px;
+  margin: 0 4px;
+  font-size: 14.4px;
+  box-shadow: inset 0 -1px rgba(255, 255, 255, 0.7);
+}
+
+.standard-select:hover:not(.disabled) {
+  box-shadow: inset 0 -2px #fff;
+}
+
+.standard-select:focus-within {
+  box-shadow: inset 0 -2px var(--primary-main);
+}
+
+.standard-select.disabled {
+  color: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 -1px rgba(255, 255, 255, 0.3);
+}
+
+.standard-select .select-display {
+  padding: 4px 24px 5px 0;
+}
+
+.standard-select > .icon {
+  right: 0;
+}
+
+/* Catches presses outside an open menu (MUI's invisible backdrop). */
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Placed under its field by `menu_place`; hidden until placed. */
+.menu {
+  position: fixed;
+  z-index: 2;
+  overflow: auto;
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+  background: var(--paper);
+  border-radius: 4px;
+  box-shadow:
+    0 5px 5px -3px rgba(0, 0, 0, 0.2),
+    0 8px 10px 1px rgba(0, 0, 0, 0.14),
+    0 3px 14px 2px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+}
+
+.menu.placed {
+  opacity: 1;
+}
+
+.menu li {
+  padding: 6px 16px;
+  font-size: 16px;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+}
+
+.menu li:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.menu li:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.menu li.selected {
+  background: rgba(163, 21, 69, 0.16);
+}
+
+.menu li.selected:hover {
+  background: rgba(163, 21, 69, 0.24);
+}
+
+.menu li.selected:focus-visible {
+  background: rgba(163, 21, 69, 0.28);
+}
+
+.outlined-field .adornment {
+  margin-right: 9px;
+  padding: 5px;
+  border-radius: 50%;
+}
+
+.outlined-field .adornment:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.outlined-field .adornment .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.profile-dialog .helper-text {
+  margin: 3px 14px 0;
+  font-size: 12px;
+  line-height: 1.66;
+  letter-spacing: 0.03333em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.profile-dialog .helper-text.error {
+  color: #f44336;
+}
+
+/* The stash tab picker (legacy `StashTabDropdown.tsx`). */
+.outlined-field.autocomplete {
+  flex-wrap: wrap;
+  /* MUI's 9px, less the border, which MUI draws outside the box. */
+  padding: 8px 64px 8px 8px;
+  cursor: text;
+}
+
+.profile-dialog .outlined-field.autocomplete input {
+  flex: 1 0 30px;
+  width: 0;
+  height: auto;
+  padding: 7.5px 4px 7.5px 5px;
+}
+
+.outlined-field .chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100% - 8px);
+  height: 32px;
+  margin: 4px;
+  font-size: 13px;
+  background: #1e1e1e;
+  border: 2px solid #616161;
+  border-radius: 16px;
+  cursor: default;
+}
+
+.outlined-field .chip-label {
+  overflow: hidden;
+  padding: 0 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.outlined-field .chip-delete {
+  display: flex;
+  margin: 0 5px 0 -6px;
+  color: rgba(255, 255, 255, 0.26);
+}
+
+.outlined-field .chip-delete:hover {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.outlined-field .chip-delete .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.outlined-field .more {
+  margin: 3px;
+}
+
+.outlined-field .picker-buttons {
+  position: absolute;
+  top: calc(50% - 14px);
+  right: 9px;
+  display: flex;
+}
+
+.picker-buttons button {
+  display: flex;
+  padding: 2px;
+  border-radius: 50%;
+}
+
+.picker-buttons button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.picker-buttons .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.picker-buttons .clear {
+  visibility: hidden;
+  padding: 4px;
+}
+
+.picker-buttons .clear .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.outlined-field.autocomplete:hover .clear,
+.outlined-field.autocomplete:focus-within .clear {
+  visibility: visible;
+}
+
+.outlined-field.open .popup .icon {
+  transform: rotate(180deg);
+}
+
+/* Placed under the field by the picker (`Anchor`). */
+.autocomplete-list {
+  position: fixed;
+  z-index: 1;
+  overflow: auto;
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+  background: var(--paper);
+  border-radius: 4px;
+  box-shadow:
+    0 5px 5px -3px rgba(0, 0, 0, 0.2),
+    0 8px 10px 1px rgba(0, 0, 0, 0.14),
+    0 3px 14px 2px rgba(0, 0, 0, 0.12);
+  cursor: default;
+}
+
+.autocomplete-list li {
+  display: flex;
+  padding: 6px 16px;
+}
+
+.autocomplete-list li[role="option"] {
+  cursor: pointer;
+}
+
+.autocomplete-list li.highlighted {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.autocomplete-list li.selected {
+  background: rgba(163, 21, 69, 0.16);
+}
+
+.autocomplete-list li.selected.highlighted {
+  background: rgba(163, 21, 69, 0.24);
+}
+
+.autocomplete-list li.empty {
+  padding: 14px 16px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.autocomplete-list .swatch {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin: 2px 8px 0 0;
+  border-radius: 3px;
+}
+
+.autocomplete-list .tab-name {
+  flex: 1;
+}
+
+.autocomplete-list .tab-index {
+  opacity: 0.6;
+}
+
+/* Legacy's MUI warning Alert under the picker. */
+.profile-dialog .warning-note {
+  margin-top: 8px;
+  padding: 6px 16px;
+  font-size: 14px;
+  line-height: 1.43;
+  color: rgb(255, 226, 183);
+  background: rgb(25, 18, 7);
+  border-radius: 4px;
+}
+
+.profile-dialog .warning-note .icon {
+  width: 22px;
+  height: 22px;
+  margin-right: 4px;
+  color: #ffa726;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  margin-left: -11px;
+  font-size: 16px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.profile-dialog .checkbox-field:first-of-type {
+  margin-top: 8px;
+}
+
+.checkbox-box {
+  position: relative;
+  display: inline-flex;
+  padding: 9px;
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+}
+
+.checkbox-box input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.checkbox-box .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.checkbox-field:hover:not(.disabled) .checkbox-box,
+.checkbox-box:has(input:focus-visible) {
+  background: rgba(163, 21, 69, 0.08);
+}
+
+.checkbox-field.checked .checkbox-box {
+  color: var(--primary-main);
+}
+
+.checkbox-field.disabled {
+  color: rgba(255, 255, 255, 0.5);
+  cursor: default;
+}
+
+.checkbox-field.disabled .checkbox-box {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.profile-dialog .dialog-actions {
+  margin: 16px 0 0;
+}
+
+.profile-dialog .text,
+.profile-dialog .primary {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  line-height: 1.75;
+  letter-spacing: 0.02857em;
+}
+
+.profile-dialog .text {
+  padding: 6px 8px;
+  color: var(--primary-main);
+}
+
+.profile-dialog .text:hover {
+  background: rgba(163, 21, 69, 0.08);
+}
+
+.profile-dialog .primary {
+  gap: 8px;
+  padding: 6px 16px;
+  color: #fff;
+  background: var(--primary-main);
+  box-shadow:
+    0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+}
+
+.profile-dialog .primary:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.profile-dialog .primary:disabled {
+  color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.profile-dialog .primary .icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* The legacy import dialog (F21): accounts with their Profiles. */
+.legacy-accounts,
+.legacy-profiles {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legacy-accounts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.legacy-profiles {
+  padding-left: 28px;
+  font-size: 0.85rem;
+}
+
+.legacy-profiles li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Snapshot and Cancel (F3) with the allowance hint (F7). */
+.snapshot-area {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Legacy's small contained primary button. */
+.snapshot-area .snapshot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 8px;
+  padding: 4px 10px 4px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.75;
+  letter-spacing: 0.02857em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--primary-main);
+  border-radius: 4px;
+  box-shadow:
+    0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+}
+
+.snapshot-area .snapshot:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.snapshot-area .snapshot:disabled {
+  color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  cursor: default;
+}
+
+.snapshot-area .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.allowance-hint {
+  display: flex;
+  color: var(--text-secondary);
+}
+
+/* Remove Snapshots (F12). */
+.remove-snapshots-dialog {
+  width: 560px;
+}
+
+.snapshot-list {
+  max-height: 50vh;
+  overflow: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.snapshot-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.snapshot-list label:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.snapshot-list .entry {
+  flex: 1;
+}
+
+.snapshot-list .warning {
+  display: flex;
+}
+
+.snapshot-list .icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* Net worth widgets (F8), as legacy's `Widget` papers in a grid of
+   `xs=6 md=4 lg=3 xl=2` (theme breakpoints 900, 1300 and 1950 px). */
+.widgets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 900px) {
+  .widgets {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1300px) {
+  .widgets {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1950px) {
+  .widgets {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.widget {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100px;
+  padding: 16px;
+  color: var(--text-secondary);
+  background: #1e1e1e;
+  border-radius: 4px;
+  box-shadow:
+    0 2px 1px -1px rgba(0, 0, 0, 0.2),
+    0 1px 1px 0 rgba(0, 0, 0, 0.14),
+    0 1px 3px 0 rgba(0, 0, 0, 0.12);
+}
+
+.widget-top {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-height: 43px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.widget-top > .icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin-right: 16px;
+}
+
+.widget-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12.8px;
+  white-space: nowrap;
+}
+
+.widget-top .widget-value {
+  margin-left: auto;
+}
+
+.widget-value {
+  overflow: hidden;
+  font-size: 18.4px;
+  line-height: 1.6;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Legacy's currency colour (`rarityColors.currency`). */
+.widget-value.currency {
+  color: #ad904b;
+}
+
+.widget-value:not(.currency) {
+  color: var(--text);
+}
+
+.widget-suffix {
+  margin-left: 4px;
+  font-size: 17.6px;
+  white-space: nowrap;
+}
+
+/* Legacy's small icon buttons beside the value. */
+.widget .adornment {
+  display: flex;
+  flex: none;
+  margin-left: 6px;
+  padding: 5px;
+  color: var(--primary-lighter);
+  border-radius: 50%;
+}
+
+.widget .adornment:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.widget .adornment .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.widget .change {
+  font-weight: bold;
+}
+
+.widget .since {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+}
+
+.widget .change.positive {
+  color: #43a047;
+}
+
+.widget .change.negative {
+  color: #d32f2f;
+}
+
+/* Charts (F10, D24): collapsible sections, the in-house SVG charts and the
+   sparkline. Nothing animates. */
+.chart-sections {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+/* Legacy's Accordion (`ExpansionPanel.tsx`): a 40 px summary in
+   `secondary.main` over details in `background.default`. */
+.chart-section {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--paper);
+  border: 1px solid rgba(0, 0, 0, 0.125);
+  border-radius: 4px;
+}
+
+.chart-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 40px;
+  padding: 0 16px;
+  font-size: 12px;
+  line-height: 2.66;
+  letter-spacing: 0.08333em;
+  text-transform: uppercase;
+  background: #1e1e1e;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.chart-section-header > .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.chart-section-header {
+  cursor: pointer;
+  outline: none;
+}
+
+.chart-section-header:focus-visible {
+  background: #2a2a2a;
+}
+
+.chart-section-title {
+  flex: 1;
+  text-align: left;
+}
+
+/* Legacy's body2 credit: "Prices fetched from https://poe.ninja …". */
+.chart-section-aside {
+  font-size: 14px;
+  line-height: 1.43;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-secondary);
+}
+
+.chart-section-aside a {
+  color: var(--primary-lighter);
+  text-decoration: none;
+}
+
+.chart-section-chevron {
+  display: flex;
+}
+
+.chart-section-chevron .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.chart-section.open .chart-section-chevron {
+  transform: rotate(180deg);
+}
+
+.chart-section-body {
+  padding: 16px;
+  background: var(--background);
+}
+
+.chart {
+  position: relative;
+}
+
+.chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+  user-select: none;
+}
+
+.chart-svg path,
+.chart-svg circle,
+.chart-svg text,
+.chart-svg rect {
+  pointer-events: none;
+}
+
+.chart-grid {
+  stroke: #4e4e4e;
+  stroke-width: 1;
+}
+
+.chart-axis,
+.chart-tick {
+  stroke: var(--text-disabled);
+  stroke-width: 1;
+}
+
+.chart-label {
+  fill: var(--text);
+  font-size: 11px;
+}
+
+.chart-hover {
+  stroke: #fff;
+  stroke-width: 1;
+}
+
+.chart-tooltip rect {
+  fill: rgba(32, 32, 32, 0.95);
+  stroke-width: 1;
+}
+
+.chart-tooltip text {
+  fill: var(--text);
+  font-size: 11px;
+}
+
+/* Highcharts' selection marker. */
+.chart-selection {
+  fill: rgba(51, 92, 173, 0.25);
+}
+
+.reset-zoom {
+  position: absolute;
+  top: 6px;
+  left: 64px;
+  z-index: 1;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  background: var(--paper);
+  border: 1px solid #4e4e4e;
+  border-radius: 2px;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chart-legend-entry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9pt;
+}
+
+.chart-legend-entry:hover {
+  color: gray;
+}
+
+.chart-legend-entry.hidden {
+  opacity: 0.4;
+}
+
+.chart-legend-swatch {
+  width: 10px;
+  height: 10px;
+}
+
+.time-spans {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.time-span {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.time-span.selected {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sparkline {
+  display: block;
+}
+
+/* The Net worth overlay (F14; legacy `public/overlays/netWorth.html`). */
+.overlay {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #101010;
+  font-size: 14px;
+}
+
+.overlay-header {
+  display: flex;
+  align-items: center;
+  height: 25px;
+  padding: 0 0 0 10px;
+  background: var(--title-bar);
+  color: var(--primary-light);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.overlay-header .title {
+  flex: 1;
+}
+
+.overlay-header .control {
+  height: 25px;
+}
+
+.overlay-values {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 10px;
+  margin: 0;
+  padding: 5px 10px;
+}
+
+.overlay-values dt {
+  white-space: nowrap;
+}
+
+.overlay-values dd {
+  margin: 0;
+  text-align: right;
+  color: #ad904b;
+  white-space: nowrap;
+}
+
+.overlay-values .secondary {
+  color: var(--text-secondary);
+}
+
+@media (max-width: 199px) {
+  .overlay {
+    font-size: 12px;
+  }
+}
+
+/* Item table (F11, legacy `TableWrapper.styles.ts`, `Columns.styles.ts`). */
+
+/* The toolbar sits on the details' background, the table on a paper
+   (`TableContainer`, #202020). */
+.item-table {
+  position: relative;
+}
+
+.item-table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* Legacy's small ToggleButtonGroup: Latest and Comparison. */
+.item-table-views {
+  display: flex;
+  height: 36px;
+}
+
+.item-table-views .control {
+  display: flex;
+  align-items: center;
+  padding: 7px;
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.item-table-views .control:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.item-table-views .control:last-child {
+  margin-left: -1px;
+  border-radius: 0 4px 4px 0;
+}
+
+.item-table-views .control:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.item-table-views .control.active {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.item-table-views .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.item-table-filter .control {
+  display: flex;
+  padding: 5px;
+  color: var(--text-secondary);
+  border-radius: 50%;
+}
+
+.item-table-filter .control:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.item-table-filter .icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Legacy's small outlined search field. */
+.item-table-filter {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  max-width: 350px;
+  height: 40px;
+  padding: 0 4px 0 14px;
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.23);
+  border-radius: 4px;
+}
+
+.item-table-filter:hover {
+  border-color: #fff;
+}
+
+.item-table-filter:focus-within {
+  border-color: var(--primary-main);
+  box-shadow: inset 0 0 0 1px var(--primary-main);
+}
+
+.item-table-filter input {
+  flex: 1;
+  min-width: 0;
+  padding: 8.5px 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: none;
+  border: none;
+  outline: none;
+}
+
+.item-table-subtotal {
+  padding: 6px 10px;
+  color: #ad904b;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.item-table-tab-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 0 8px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.item-table-tab-filter p {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.item-table-tab-filter label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.item-table-actions {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.column-menu-anchor {
+  position: relative;
+}
+
+/* Legacy's small contained primary buttons. */
+.item-table-actions .action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.75;
+  letter-spacing: 0.02857em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--primary-main);
+  border: none;
+  border-radius: 4px;
+  box-shadow:
+    0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+}
+
+.item-table-actions .action:hover:not(:disabled),
+.item-table-actions .action.active {
+  background: var(--primary-dark);
+}
+
+.item-table-actions .action:disabled {
+  color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  cursor: default;
+}
+
+.item-table-actions .action .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.column-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 4px 16px;
+  padding: 12px 16px;
+  background: var(--paper);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.column-menu .preset {
+  grid-column: 1 / -1;
+}
+
+.column-menu select {
+  font: inherit;
+  color: var(--text);
+  background: var(--paper);
+}
+
+.column-menu p {
+  grid-column: 1 / -1;
+  margin: 0 0 4px;
+  color: var(--text-secondary);
+}
+
+.column-menu label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.item-table-scroll {
+  overflow-x: auto;
+  background: var(--paper);
+}
+
+.item-table table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+/* Legacy's react-table: bordered header cells over a shadowed header row,
+   rows divided by lines, faint lines between columns. */
+.item-table thead tr {
+  background: var(--paper);
+  border-bottom: 1px solid rgb(81, 81, 81);
+  box-shadow: 0 2px 15px 0 rgba(255, 46, 117, 0.15);
+}
+
+.item-table th,
+.item-table td {
+  overflow: hidden;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.item-table th {
+  position: relative;
+  padding: 4px 1px 4px 16px;
+  font-weight: 500;
+  line-height: 24px;
+  border-top: 1px solid rgba(56, 56, 56, 0.6);
+  border-right: 1px solid rgba(56, 56, 56, 0.6);
+}
+
+.item-table th:first-child {
+  border-left: 1px solid rgba(56, 56, 56, 0.6);
+}
+
+.item-table td {
+  height: 42px;
+  padding: 6px 14px;
+  line-height: 1.43;
+  border-right: 1px solid rgba(56, 56, 56, 0.2);
+  border-left: 1px solid rgba(56, 56, 56, 0.2);
+}
+
+.item-table td.icon-cell {
+  padding: 0;
+}
+
+.item-table tbody tr {
+  border-bottom: 1px solid rgba(81, 81, 81, 0.6);
+}
+
+.item-table tbody tr:hover:not(:has(.empty)) {
+  background: rgba(163, 21, 69, 0.16);
+}
+
+.item-table .number {
+  text-align: right;
+}
+
+.item-table th .sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.item-table th .sort span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-table th.sorted .sort {
+  color: var(--text);
+}
+
+/* MUI's TableSortLabel arrow: hidden until hovered (half) or sorted, its
+   place kept either way. */
+.item-table th .sort .icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  opacity: 0;
+  transition: opacity 200ms;
+}
+
+.item-table th .sort:hover .icon {
+  opacity: 0.5;
+}
+
+.item-table th.sorted .sort .icon {
+  opacity: 1;
+}
+
+/* Headers that do not sort keep the same space for a right-aligned label. */
+.item-table th.number > .label {
+  padding-right: 22px;
+}
+
+.item-table .resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.item-table .resize-handle:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.item-table td.empty {
+  padding: 8px;
+  white-space: normal;
+  color: var(--primary-light);
+}
+
+.item-table .ellipsis {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-table .rarity-normal { --rarity: #c0c0c0; }
+.item-table .rarity-magic { --rarity: #8888ff; }
+.item-table .rarity-rare { --rarity: #ebeb57; }
+.item-table .rarity-unique { --rarity: #da7a36; }
+.item-table .rarity-gem { --rarity: #1ba29b; }
+.item-table .rarity-currency { --rarity: #ad904b; }
+.item-table .rarity-divination { --rarity: #c0c0c0; }
+.item-table .rarity-quest { --rarity: #6eb930; }
+.item-table .rarity-unknown { --rarity: #fff; }
+.item-table .rarity-legacy { --rarity: #82ad6a; }
+
+.item-table .item-icon-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 41px;
+  border-left: 5px solid var(--rarity);
+  background: linear-gradient(90deg, var(--paper) 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+.item-table .item-icon-cell img {
+  max-width: 32px;
+  max-height: 32px;
+}
+
+.item-table .item-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--rarity);
+}
+
+/* Legacy's small inline IconButtons in primaryLighter: poe.ninja next to
+   the name (1.2rem), set and remove next to a custom price (0.75rem). */
+.item-table .item-name .control,
+.item-table .custom-price .control {
+  display: inline-flex;
+  flex: none;
+  padding: 5px;
+  color: var(--primary-lighter);
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.item-table .item-name .control:hover,
+.item-table .custom-price .control:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.item-table .item-name .control .icon {
+  width: 19.2px;
+  height: 19.2px;
+}
+
+.item-table .custom-price .control .icon {
+  width: 12px;
+  height: 12px;
+}
+
+.item-table .custom-price .control:disabled {
+  color: rgba(255, 255, 255, 0.3);
+  cursor: default;
+}
+
+.item-table .corrupted {
+  color: rgb(255 123 123);
+}
+
+.item-table .unavailable {
+  color: var(--text-disabled);
+}
+
+.item-table .trend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.item-table .trend .sparkline {
+  flex: none;
+}
+
+/* Legacy's `positiveChange` / `negativeChange`: bold green[600] and
+   red[700]. */
+.item-table .positive {
+  font-weight: 700;
+  color: #43a047;
+}
+
+.item-table .negative {
+  font-weight: 700;
+  color: #d32f2f;
+}
+
+/* MUI's TablePagination on the table's paper: a 52 px toolbar, the rows
+   per page select without underline, 40 px page buttons. */
+.item-table .pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 52px;
+  padding: 0 2px 0 16px;
+  font-size: 14px;
+  line-height: 1.43;
+  color: var(--text);
+  background: var(--paper);
+}
+
+.item-table .pager .standard-select,
+.item-table .pager .standard-select:hover,
+.item-table .pager .standard-select:focus-within {
+  min-width: 0;
+  margin: 0 32px 0 8px;
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.item-table .pager .standard-select .select-display {
+  padding: 0 24px 0 8px;
+  text-align: right;
+}
+
+.item-table .pager-actions {
+  display: flex;
+  margin-left: 20px;
+}
+
+.item-table .pager .control {
+  display: inline-flex;
+  padding: 8px;
+  color: #fff;
+  border-radius: 50%;
+}
+
+.item-table .pager .control:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.item-table .pager .control:disabled {
+  color: rgba(255, 255, 255, 0.3);
+  cursor: default;
+}
+
+.item-table .pager .control .icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* The Group drawer (F13, legacy `GroupOverview.styles.ts`). */
+.group-drawer {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--nav-width);
+  overflow: auto;
+  background: var(--background);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  height: 50px;
+  padding-left: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.group-header .control {
+  height: 40px;
+  border-radius: 50%;
+}
+
+.group-header .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.group-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.group-actions .primary {
+  padding: 6px 16px;
+  font-weight: 500;
+  text-transform: uppercase;
+  background: var(--primary-light);
+  border-radius: 4px;
+}
+
+.group-actions .primary:hover:not(:disabled) {
+  background: var(--primary-lighter);
+}
+
+.group-actions .primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.group-name {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.player-list h3 {
+  margin: 0;
+  padding: 0 16px 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.player-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.player-list label {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.player-list label:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.player-list .avatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--background);
+  background: #bdbdbd;
+  border-radius: 50%;
+}
+
+.player-list .player-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dialog .helper {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+
+/* Support panel separators, What's New and Credits (F19) */
+
+.support-panel .separator {
+  margin: 4px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.info-dialog {
+  width: 640px;
+}
+
+.info-dialog .markdown {
+  overflow: auto;
+  color: var(--text-secondary);
+}
+
+.info-dialog .markdown h1,
+.info-dialog .markdown h2,
+.info-dialog .markdown h3 {
+  margin: 16px 0 8px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.info-dialog .markdown h1 {
+  font-size: 1.25rem;
+}
+
+.info-dialog .markdown h2 {
+  font-size: 1.1rem;
+}
+
+.info-dialog .markdown h3 {
+  font-size: 1rem;
+}
+
+.info-dialog .markdown p,
+.info-dialog .markdown ul,
+.info-dialog .markdown ol {
+  margin: 0 0 8px;
+}
+
+.info-dialog .markdown li {
+  margin-bottom: 4px;
+}
+
+.info-dialog .markdown a {
+  color: var(--primary-lighter);
+}
+
+.info-dialog .markdown code {
+  font-size: 0.9em;
+}
+
+/* The guided tour (F19), as legacy's reactour stepper: the window dimmed
+   but for the highlighted element, clicks blocked everywhere, a numbered
+   card with arrows and one dot per step. */
+
+.tour-blocker {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+}
+
+.tour-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 21;
+  background: rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
+.tour-spotlight {
+  position: fixed;
+  z-index: 21;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
+.tour-card {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 22;
+  min-width: 150px;
+  max-width: 450px;
+  padding: 24px 30px;
+  color: #000;
+  background: #fff;
+  box-shadow: 0 0.5em 3em rgba(0, 0, 0, 0.3);
+  outline: none;
+  transition: transform 0.3s;
+}
+
+.tour-card h2 {
+  margin: 0 0 0.35em;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.tour-card p {
+  margin: 0 0 0.35em;
+  font-size: 14px;
+  line-height: 1.43;
+}
+
+.tour-badge {
+  position: absolute;
+  top: -0.8125em;
+  left: -0.8125em;
+  height: 1.875em;
+  padding: 0 0.8125em;
+  font-family: monospace;
+  font-size: 1em;
+  line-height: 2;
+  color: #fff;
+  background: var(--primary-main);
+  border-radius: 1.625em;
+  box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.3);
+}
+
+.tour-controls {
+  display: flex;
+  align-items: center;
+  margin-top: 24px;
+}
+
+.tour-arrow {
+  display: block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 12px;
+  color: #646464;
+}
+
+.tour-arrow svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tour-arrow.back {
+  margin-right: 24px;
+}
+
+.tour-arrow.next {
+  margin-left: 24px;
+}
+
+.tour-arrow:hover:not(:disabled) {
+  color: #000;
+}
+
+.tour-arrow:disabled {
+  color: #caccce;
+  cursor: not-allowed;
+}
+
+.tour-dots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  counter-reset: dot;
+}
+
+.tour-dot {
+  position: relative;
+  display: block;
+  width: 8px;
+  height: 8px;
+  margin: 4px;
+  color: #caccce;
+  border: 1px solid #caccce;
+  border-radius: 100%;
+  counter-increment: dot;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+/* The step's number over its dot on hover. */
+.tour-dot::before {
+  content: counter(dot);
+  position: absolute;
+  bottom: calc(100% + 0.25em);
+  left: 50%;
+  opacity: 0;
+  transform: translate(-50%, 1em);
+  transition: 0.3s;
+}
+
+.tour-dot:hover {
+  background: currentColor;
+}
+
+.tour-dot:hover::before {
+  opacity: 0.5;
+  transform: translate(-50%, -2px);
+}
+
+.tour-dot.current {
+  color: var(--primary-main);
+  background: var(--primary-main);
+  border: 0;
+  transform: scale(1.25);
+  cursor: not-allowed;
+}
+
+.tour-begin {
+  margin-left: 24px;
+  padding: 6px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.75;
+  letter-spacing: 0.02857em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--primary-main);
+  border-radius: 4px;
+  box-shadow:
+    0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+}
+
+.tour-begin:hover {
+  background: var(--primary-dark);
+}

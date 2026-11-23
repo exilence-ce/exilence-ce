@@ -1,0 +1,50 @@
+name: Bug report
+description: Create a report to help us improve
+body:
+  - type: textarea
+    id: bug
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: To reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics bundle
+      description: >-
+        Click **Export diagnostics** in the support panel (the question mark in
+        the title bar) or under **Settings → Advanced**, save the zip, then
+        drag it into this field. It holds the logs, versions, system details,
+        settings and rate-limit state, never tokens or passwords; nothing is
+        uploaded unless you attach it here. Turn on **Debug mode** under
+        **Settings → Advanced** and reproduce the bug first for a more detailed
+        log.
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If applicable, add screenshots to help explain your problem.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add any other context about the problem here.

@@ -1,0 +1,19 @@
+[package]
+name = "wire"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+prost = "0.14"
+prost-types = "0.14"
+tonic = "0.14"
+tonic-prost = "0.14"
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+[build-dependencies]
+protox = "0.10"
+tonic-prost-build = "0.14"

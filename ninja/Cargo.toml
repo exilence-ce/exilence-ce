@@ -1,0 +1,21 @@
+[package]
+name = "ninja"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+domain = { path = "../domain" }
+# Rebuilds a failed response after logging its body (Debug mode, F20).
+http = "1"
+log = "0.4"
+# rustls with ring, configured in `http::client`, as tonic's TLS: no second
+# crypto provider.
+reqwest = { version = "0.13", default-features = false, features = ["http2", "json", "rustls-no-provider"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+webpki-roots = "1"

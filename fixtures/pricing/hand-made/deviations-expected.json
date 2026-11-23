@@ -1,0 +1,28 @@
+{
+  "league": "Standard",
+  "settings": ["default", "low-confidence", "threshold-5c"],
+  "d2": [false, true],
+  "stashTabId": "hand-made-deviations",
+  "value": 30,
+  "items": [
+    {
+      "itemId": "hand-made-d29-filled-coffin",
+      "matched": false,
+      "deviation": "D29",
+      "note": "An ordinary currency item named 'Filled Coffin' by its type line; poe.ninja has no coffin prices. Legacy throws (`item.name.indexOf is not a function`)."
+    },
+    {
+      "itemId": "hand-made-d30-watchstone-uses-remaining",
+      "matched": false,
+      "deviation": "D30",
+      "note": "Variant '15' from '15 uses remaining'; poe.ninja has no watchstone prices. Legacy throws (`.split` on the mod object)."
+    },
+    {
+      "itemId": "hand-made-d31-impresence-cold",
+      "matched": true,
+      "price": 30,
+      "deviation": "D31",
+      "note": "Variant 'Cold' matches impresence-cold-onyx-amulet (count 43, above the low-confidence cut and the 5c threshold). Legacy leaves the variant empty and matches nothing."
+    }
+  ]
+}

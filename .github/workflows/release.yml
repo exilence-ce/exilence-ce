@@ -1,0 +1,269 @@
+name: Release
+
+# ADR 0003. A `v*` tag checks the update signing key, runs the tests on
+# Windows and macOS (os-tests.yml), then builds the Windows installer, the
+# universal macOS `.dmg` and the Linux AppImage into a draft release. Publishing a release rewrites `latest.json` and `beta.json`
+# on the fixed prerelease `updater`. The repository is always
+# `github.repository` (`GH_REPO` for `gh`), never a literal name.
+#
+# A manual run with `dry_run` runs the tests and the three builds from any
+# branch without secrets, signing, draft or publishing: the installers go up as
+# workflow artifacts for 3 days. Its `os` limits tests and build to one runner
+# (`ubuntu-24.04`: the build only, ci.yml tests Linux).
+
+on:
+  push:
+    tags: ["v*"]
+  release:
+    types: [published]
+  # Recomputes the update files, e.g. after a bad release was deleted.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Test and build from this branch; no secrets, signing, draft or publishing
+        type: boolean
+        default: false
+      os:
+        description: "Dry run only: test and build on this runner"
+        type: choice
+        options: [all, windows-latest, macos-latest, ubuntu-24.04]
+        default: all
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    name: Check the tag and the changelog
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
+      prerelease: ${{ steps.tag.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      # The tag must name the workspace version.
+      - id: tag
+        run: cargo run -q -p release-tool --locked -- check-tag "$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+      # The version's CHANGELOG.md section becomes the release notes.
+      - env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: cargo run -q -p release-tool --locked -- notes CHANGELOG.md "$VERSION"
+
+  # Fails in seconds, before the builds, when the update key is missing or
+  # its password is wrong. The secrets live in the `release` environment,
+  # restricted to `v*` tags.
+  signing-check:
+    name: Check the update signing key
+    needs: check
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    environment: release
+    steps:
+      - name: Sign a dummy file
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          for name in TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::The secret $name is empty in the release environment; add it under Settings > Environments > release"
+              exit 1
+            fi
+          done
+          echo dummy > dummy.txt
+          # The CLI reads the key and password from these variables.
+          if ! npx --yes @tauri-apps/cli@2.12.4 signer sign --app-version "$VERSION" dummy.txt; then
+            echo "::error::TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD cannot sign: wrong password or a malformed key"
+            exit 1
+          fi
+
+  # A dry run has no `check` (no tag): `!failure()` lets the skipped job pass.
+  test:
+    name: Test
+    needs: check
+    if: ${{ !failure() && !cancelled() && (github.event_name == 'push' || inputs.dry_run && inputs.os != 'ubuntu-24.04') }}
+    uses: ./.github/workflows/os-tests.yml
+    with:
+      os: ${{ inputs.dry_run && inputs.os != 'all' && inputs.os || 'both' }}
+
+  draft:
+    name: Create the draft release
+    needs: [check, signing-check, test]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - env:
+          VERSION: ${{ needs.check.outputs.version }}
+          PRERELEASE: ${{ needs.check.outputs.prerelease }}
+        run: |
+          cargo run -q -p release-tool --locked -- notes CHANGELOG.md "$VERSION" > notes.md
+          # A re-run reuses its draft; a published release is never touched.
+          if draft=$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq .isDraft 2> /dev/null); then
+            if [ "$draft" != true ]; then
+              echo "::error::$GITHUB_REF_NAME is already published"
+              exit 1
+            fi
+            gh release edit "$GITHUB_REF_NAME" --notes-file notes.md
+          else
+            flags=(--draft --verify-tag --title "$VERSION" --notes-file notes.md)
+            if [ "$PRERELEASE" = true ]; then
+              flags+=(--prerelease)
+            fi
+            gh release create "$GITHUB_REF_NAME" "${flags[@]}"
+          fi
+
+  build:
+    name: Build (${{ matrix.os }})
+    needs: [check, signing-check, test, draft]
+    if: ${{ !failure() && !cancelled() && (github.event_name == 'push' || inputs.dry_run) }}
+    # Holds the update key's secrets, restricted to `v*` tags. A dry run (any
+    # branch) uses the secretless, unrestricted `dry-run` environment: an
+    # empty string is falsy in expressions, so `'' || 'release'` would pick
+    # `release` and a branch run would be refused.
+    environment: ${{ inputs.dry_run && 'dry-run' || 'release' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # ubuntu-24.04: glibc 2.39 is the AppImage's minimum (F16).
+        os: ${{ fromJSON(inputs.dry_run && inputs.os != 'all' && format('["{0}"]', inputs.os) || '["windows-latest","macos-latest","ubuntu-24.04"]') }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install WebKitGTK and the tray library
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev file
+      # Per runner values stay in their step: on Windows a job-level `TARGETS`
+      # hides the action's own `targets` (env names ignore case there).
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'wasm32-unknown-unknown,aarch64-apple-darwin,x86_64-apple-darwin' || 'wasm32-unknown-unknown' }}
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: trunk
+      # Signs the update artifacts (not in a dry run); macOS is ad-hoc signed
+      # (tauri.conf.json).
+      - name: Build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ !inputs.dry_run && secrets.TAURI_SIGNING_PRIVATE_KEY || '' }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ !inputs.dry_run && secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
+          ARGS: ${{ matrix.os == 'windows-latest' && '--bundles nsis' || matrix.os == 'macos-latest' && '--target universal-apple-darwin --bundles app,dmg' || '--bundles appimage' }}
+          CONFIG: '{"bundle":{"createUpdaterArtifacts":${{ !inputs.dry_run }}}}'
+          # linuxdeploy runs without FUSE.
+          APPIMAGE_EXTRACT_AND_RUN: 1
+        run: |
+          read -ra args <<< "$ARGS"
+          npx --yes @tauri-apps/cli@2.12.4 build "${args[@]}" \
+            --config "$CONFIG"
+      # Names end as tools/release expects (ARTIFACTS, INSTALLERS); each
+      # update artifact goes up with its signature.
+      - name: Stage
+        env:
+          VERSION: ${{ needs.check.outputs.version || 'dry-run' }}
+          SIGNED: ${{ !inputs.dry_run }}
+        run: |
+          shopt -s nullglob
+          one() {
+            if [ "$#" -ne 1 ]; then
+              echo "::error::expected one file, found $#: $*" >&2
+              return 1
+            fi
+            printf '%s\n' "$1"
+          }
+          stage() {
+            cp "$1" "dist/Exilence-CE-NG_$VERSION$2"
+            if [ "${3-}" = signed ] && [ "$SIGNED" = true ]; then
+              cp "$1.sig" "dist/Exilence-CE-NG_$VERSION$2.sig"
+            fi
+          }
+          mkdir dist
+          case "$RUNNER_OS" in
+            Windows)
+              exe=$(one target/release/bundle/nsis/*-setup.exe)
+              stage "$exe" _x64-setup.exe signed
+              ;;
+            macOS)
+              bundle=target/universal-apple-darwin/release/bundle
+              dmg=$(one "$bundle"/dmg/*.dmg)
+              stage "$dmg" _universal.dmg
+              # The update archive exists only with updater artifacts, which
+              # a dry run does not create.
+              if [ "$SIGNED" = true ]; then
+                app=$(one "$bundle"/macos/*.app.tar.gz)
+                stage "$app" _universal.app.tar.gz signed
+              fi
+              ;;
+            Linux)
+              image=$(one target/release/bundle/appimage/*.AppImage)
+              stage "$image" _amd64.AppImage signed
+              ;;
+          esac
+          ls -l dist
+      - name: Upload to the draft
+        if: ${{ !inputs.dry_run }}
+        run: gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+      - name: Upload the installers
+        if: ${{ inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: dist/*
+          retention-days: 3
+
+  update-files:
+    name: Rewrite the update files
+    if: >-
+      (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
+      || startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: update-files
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Create the updater release if missing
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if ! gh release view updater > /dev/null 2>&1; then
+            gh release create updater --prerelease --target "$DEFAULT_BRANCH" --title "Update files" \
+              --notes "latest.json and beta.json, the update files of the release channels (ADR 0003). Rewritten by the release workflow whenever a release is published; never edit or delete them by hand."
+          fi
+      # latest.json: the newest stable release; beta.json: the higher of the
+      # newest stable and the newest beta. Never a draft or partial release.
+      - name: Rewrite latest.json and beta.json
+        run: |
+          tool() {
+            cargo run -q -p release-tool --locked -- "$@"
+          }
+          gh api --paginate "repos/$GH_REPO/releases?per_page=100" > releases.json
+          tool select releases.json > selected.txt
+          cat selected.txt
+          current=$(gh release view updater --json assets --jq '.assets[].name')
+          for channel in latest beta; do
+            tag=$(awk -v channel="$channel" '$1 == channel { print $2 }' selected.txt)
+            if [ -n "$tag" ]; then
+              gh release download "$tag" --pattern '*.sig' --dir "signatures/$tag" --clobber
+              tool update-file releases.json "$tag" "signatures/$tag" > "$channel.json"
+              gh release upload updater "$channel.json" --clobber
+            elif grep -qx "$channel.json" <<< "$current"; then
+              gh release delete-asset updater "$channel.json" --yes
+            fi
+          done

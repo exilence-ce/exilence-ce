@@ -1,0 +1,8 @@
+2026/11/11-23:59:42.778 34d84 Creating DB /tmp/legacy-lab/work/next/.config/exilence-next-app/IndexedDB/file__0.indexeddb.leveldb since it was missing.
+2026/11/11-23:59:42.778 34d84 Reusing MANIFEST /tmp/legacy-lab/work/next/.config/exilence-next-app/IndexedDB/file__0.indexeddb.leveldb/MANIFEST-000001
+2026/11/11-23:59:48.665 34de1 Level-0 table #5: started
+2026/11/11-23:59:48.667 34de1 Level-0 table #5: 215115 bytes OK
+2026/11/11-23:59:48.667 34de1 Delete type=0 #3
+2026/11/11-23:59:48.880 34de1 Level-0 table #7: started
+2026/11/11-23:59:48.881 34de1 Level-0 table #7: 207947 bytes OK
+2026/11/11-23:59:48.882 34de1 Delete type=0 #4

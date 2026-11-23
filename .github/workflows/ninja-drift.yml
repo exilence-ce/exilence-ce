@@ -1,0 +1,91 @@
+name: poe.ninja drift check
+
+# parity-verification.md, CI: weekly, `tools/ninja-drift` fetches poe.ninja's
+# price leagues and every price request of the current challenge league and
+# Standard with the app's poe.ninja client, and prices the fixture stash. A
+# parse failure or a fixture stash priced at 0 (exit status 1) opens an issue
+# labelled `ninja-drift`, or comments on the open one. Never runs on PRs.
+
+on:
+  schedule:
+    # Mondays 06:17 UTC.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      force_parse_failure:
+        description: Check against a local poe.ninja whose currency overview does not parse (opens an issue)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: ninja-drift
+
+env:
+  CARGO_TERM_COLOR: always
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
+  LABEL: ninja-drift
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build -q -p ninja-drift --locked
+      # The same check against a poe.ninja that lists Standard and answers
+      # its currency overview with a body that does not parse.
+      - name: Serve a poe.ninja that does not parse
+        if: inputs.force_parse_failure
+        run: |
+          site="$RUNNER_TEMP/broken-ninja"
+          economy="$site/poe1/api/economy"
+          mkdir -p "$economy/stash/current/currency"
+          echo '[{"id":"Standard","name":"Standard"}]' > "$economy/leagues"
+          echo '{"lines":"forced parse failure"}' > "$economy/stash/current/currency/overview"
+          nohup python3 -m http.server 8787 --bind 127.0.0.1 --directory "$site" > /dev/null 2>&1 &
+          curl -sf --retry 10 --retry-connrefused --retry-delay 1 -o /dev/null http://127.0.0.1:8787/poe1/api/economy/leagues
+          echo "NINJA_URL=http://127.0.0.1:8787" >> "$GITHUB_ENV"
+      - id: check
+        name: Check poe.ninja
+        run: |
+          set +e
+          cargo run -q -p ninja-drift --locked -- ${NINJA_URL:+"$NINJA_URL"} 2>&1 | tee "$RUNNER_TEMP/drift.log"
+          status=${PIPESTATUS[0]}
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
+      - name: Open or comment on the drift issue
+        if: failure() && steps.check.outputs.status == '1'
+        env:
+          FORCED: ${{ inputs.force_parse_failure }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          body="$RUNNER_TEMP/issue.md"
+          {
+            if [ "$FORCED" = true ]; then
+              echo "**Forced parse failure** (manual run testing this workflow); close this issue."
+              echo
+            fi
+            echo "The poe.ninja drift check failed: $RUN_URL"
+            echo
+            echo '```'
+            tail -c 60000 "$RUNNER_TEMP/drift.log"
+            echo '```'
+          } > "$body"
+          number=$(gh issue list --label "$LABEL" --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body-file "$body"
+          else
+            gh label create "$LABEL" --force --color D93F0B \
+              --description "poe.ninja no longer parses or prices (ninja-drift.yml)"
+            gh issue create --title "poe.ninja drift check failed" --label "$LABEL" --body-file "$body"
+          fi

@@ -1,0 +1,88 @@
+[package]
+name = "exilence-ce-ng"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+# Distinct from the binary's name: equal names collide on Windows (cargo#8519).
+name = "exilence_ce_ng_lib"
+
+[dependencies]
+base64 = "0.22"
+# Local time of the CSV export's title and file name (F11).
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+crc32c = "0.6"
+domain = { path = "../domain" }
+getrandom = "0.3"
+humantime = "2"
+# Debug mode's request lines of the backend channel (F20).
+http = "1"
+http-body = "1"
+ipc = { path = "../ipc" }
+log = { version = "0.4", features = ["std"] }
+ninja = { path = "../ninja" }
+open = "5"
+# The Diagnostics bundle's OS version (F20).
+os_info = { version = "3", default-features = false }
+prost = "0.14"
+prost-types = "0.14"
+regex = "1"
+# Save dialogs opened by the core (as Tauri's dialog plugin does, through
+# GTK on Linux); no dialog plugin is exposed to the webview.
+rfd = { version = "0.17", default-features = false, features = ["gtk3"] }
+# TLS configured in `ninja::http::client`.
+reqwest = { version = "0.13", default-features = false, features = ["http2", "json", "rustls-no-provider"] }
+# The item table's price table, held with the price entries it borrows.
+self_cell = "1"
+semver = "1"
+serde = { version = "1", features = ["derive"] }
+# Also needed by `tauri::generate_context!`, which emits `serde_json` values.
+serde_json = "1"
+sha2 = "0.10"
+snap = "1"
+# Only the SQLite driver; `macros` provides `sqlx::migrate!`. From 0.9,
+# `Pool::close` returns only once every connection is closed (sqlx#3217):
+# Reset data deletes the database files after it.
+sqlx = { version = "0.9", default-features = false, features = ["sqlite", "runtime-tokio", "migrate", "macros"] }
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-deep-link = "2"
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
+tauri-plugin-updater = "2"
+tauri-plugin-window-state = "2"
+tempfile = "3"
+thiserror = "2"
+# Timers, locks and `select!` (updater, GGG queue, Snapshot); the runtime is
+# Tauri's.
+tokio = { version = "1", features = ["macros", "sync", "time"] }
+tonic = { version = "0.14", features = ["tls-ring", "tls-webpki-roots", "zstd"] }
+uuid = { version = "1", features = ["v7"] }
+wire = { path = "../wire" }
+# The Diagnostics bundle (F20); deflate through the flate2 already built.
+zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
+# SnapshotBody compression (`exilence.proto`); the version tonic uses.
+zstd = "0.14"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[target."cfg(unix)".dependencies]
+libc = "0.2"
+
+# Reset data waits for the webview's browser process to exit (F17).
+[target."cfg(windows)".dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Threading"] }
+
+# Hardware acceleration off (D7); the version Tauri uses.
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = { version = "=2.0", features = ["v2_16"] }
+
+[dev-dependencies]
+# The fake backend's Group stream.
+tokio-stream = "0.1"
+tauri = { version = "2", features = ["test"] }
+wiremock = "0.6"

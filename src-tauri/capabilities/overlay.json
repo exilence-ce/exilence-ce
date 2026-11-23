@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "overlay",
+  "description": "The Net worth overlay (F14): the app's own commands, event listening and dragging by its header. Its X closes it through `close_overlay`.",
+  "windows": ["overlay"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-start-dragging"
+  ]
+}

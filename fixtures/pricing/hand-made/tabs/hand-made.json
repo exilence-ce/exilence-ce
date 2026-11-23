@@ -1,0 +1,152 @@
+{
+  "stash": {
+    "id": "hand-made",
+    "name": "Hand-made",
+    "type": "NormalStash",
+    "index": 0,
+    "metadata": { "colour": "7c7c7c" },
+    "items": [
+      {
+        "id": "hand-made-seed-wild-ursaling",
+        "verified": false,
+        "w": 1,
+        "h": 1,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvSGFydmVzdC9XaWxkU2VlZCIsInNjYWxlIjoxfV0/hand-made/WildSeed.png",
+        "stackSize": 3,
+        "maxStackSize": 10,
+        "name": "",
+        "typeLine": "Wild Ursaling Seed",
+        "baseType": "Wild Ursaling Seed",
+        "identified": true,
+        "ilvl": 0,
+        "properties": [
+          { "name": "Spawns a Level %0 Monster when Harvested", "values": [["65", 0]], "displayMode": 3 }
+        ],
+        "frameType": 5,
+        "x": 0,
+        "y": 0,
+        "inventoryId": "Stash1"
+      },
+      {
+        "id": "hand-made-allflame-ember-of-flesh",
+        "verified": false,
+        "w": 1,
+        "h": 1,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvTmVjcm9wb2xpcy9BbGxmbGFtZU1lYXRzYWNrIiwic2NhbGUiOjF9XQ/bf3177e0f2/AllflameMeatsack.png",
+        "stackSize": 1,
+        "maxStackSize": 1,
+        "name": "",
+        "typeLine": "Allflame Ember of Flesh",
+        "baseType": "Allflame Ember of Flesh",
+        "identified": true,
+        "ilvl": 83,
+        "frameType": 11,
+        "x": 1,
+        "y": 0,
+        "inventoryId": "Stash2"
+      },
+      {
+        "id": "hand-made-beast-fenumal-plagued-arachnid",
+        "verified": false,
+        "w": 1,
+        "h": 1,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvQmVzdGlhcnlPcmJGdWxsIiwidyI6MSwiaCI6MSwic2NhbGUiOjF9XQ/3214b44360/BestiaryOrbFull.png",
+        "name": "Vile Gnaw",
+        "typeLine": "Fenumal Plagued Arachnid",
+        "baseType": "Fenumal Plagued Arachnid",
+        "identified": true,
+        "ilvl": 84,
+        "properties": [
+          { "name": "Genus: Arachnids", "values": [], "displayMode": 0 },
+          { "name": "Group: Spiders", "values": [], "displayMode": 0 },
+          { "name": "Family: The Wilds", "values": [], "displayMode": 0 }
+        ],
+        "explicitMods": [{ "description": "Spreads Plagued Ground when Hit" }],
+        "descrText": "Right-click to add this to your bestiary.",
+        "frameType": 2,
+        "x": 2,
+        "y": 0,
+        "inventoryId": "Stash3"
+      },
+      {
+        "id": "hand-made-runegraft-of-stability",
+        "verified": false,
+        "w": 1,
+        "h": 1,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2V0dGxlcnMvVmlsbGFnZVJ1bmUyIiwic2NhbGUiOjF9XQ/c0bfc39082/VillageRune2.png",
+        "stackSize": 3,
+        "maxStackSize": 10,
+        "name": "",
+        "typeLine": "Runegraft of Stability",
+        "baseType": "Runegraft of Stability",
+        "identified": true,
+        "ilvl": 0,
+        "frameType": 5,
+        "x": 3,
+        "y": 0,
+        "inventoryId": "Stash4"
+      },
+      {
+        "id": "hand-made-djinn-coin-of-power",
+        "verified": false,
+        "w": 1,
+        "h": 1,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvQ3VycmVuY3lXaXNoU3VwcG9ydEdlbVJlZCIsInNjYWxlIjoxfV0/9b061d74ee/CurrencyWishSupportGemRed.png",
+        "stackSize": 2,
+        "maxStackSize": 20,
+        "name": "",
+        "typeLine": "Coin of Power",
+        "baseType": "Coin of Power",
+        "identified": true,
+        "ilvl": 0,
+        "frameType": 5,
+        "x": 4,
+        "y": 0,
+        "inventoryId": "Stash5"
+      },
+      {
+        "id": "hand-made-astrolabe-timeless",
+        "verified": false,
+        "w": 1,
+        "h": 1,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvQXRsYXMvQXRsYXNNaXNzaW9uTGVnaW9uIiwic2NhbGUiOjF9XQ/0d281bcde3/AtlasMissionLegion.png",
+        "stackSize": 1,
+        "maxStackSize": 10,
+        "name": "",
+        "typeLine": "Timeless Astrolabe",
+        "baseType": "Timeless Astrolabe",
+        "identified": true,
+        "ilvl": 0,
+        "frameType": 5,
+        "x": 5,
+        "y": 0,
+        "inventoryId": "Stash6"
+      },
+      {
+        "id": "hand-made-map-elder-tier-16",
+        "verified": false,
+        "w": 1,
+        "h": 1,
+        "icon": "https://web.poecdn.com/gen/image/WzI4LDE0LHsiZiI6IjJESXRlbXMvTWFwcy9BdGxhczJNYXBzL05ldy9CYXNlMTYiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MSwibW4iOjE5LCJtdCI6MTYsIm1lIjoxfV0/hand-made/Base16.png",
+        "name": "Doom Spires",
+        "typeLine": "Map (Tier 16)",
+        "baseType": "Map (Tier 16)",
+        "identified": true,
+        "ilvl": 83,
+        "properties": [
+          { "name": "Map Tier", "values": [["16", 0]], "displayMode": 0, "type": 1 },
+          { "name": "Item Quantity", "values": [["+64%", 1]], "displayMode": 0 }
+        ],
+        "implicitMods": [{ "description": "Area is influenced by The Elder" }],
+        "explicitMods": [
+          { "description": "Monsters have 30% increased Area of Effect" },
+          { "description": "Players have 40% reduced effect of Non-Curse Auras from Skills" }
+        ],
+        "frameType": 2,
+        "x": 6,
+        "y": 0,
+        "inventoryId": "Stash7"
+      }
+    ]
+  }
+}

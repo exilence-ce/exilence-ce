@@ -1,0 +1,72 @@
+{
+  "stash": {
+    "id": "hand-made-deviations",
+    "name": "Hand-made deviations",
+    "type": "NormalStash",
+    "index": 1,
+    "metadata": { "colour": "7c7c7c" },
+    "items": [
+      {
+        "id": "hand-made-d29-filled-coffin",
+        "verified": false,
+        "w": 1,
+        "h": 1,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvTmVjcm9wb2xpcy9GaWxsZWRDb2ZmaW4iLCJzY2FsZSI6MX1d/hand-made/FilledCoffin.png",
+        "stackSize": 1,
+        "maxStackSize": 1,
+        "name": "",
+        "typeLine": "Filled Coffin",
+        "baseType": "Filled Coffin",
+        "identified": true,
+        "ilvl": 84,
+        "implicitMods": [{ "description": "Level 84 Bloodline Corpse" }],
+        "frameType": 5,
+        "x": 0,
+        "y": 0,
+        "inventoryId": "Stash1"
+      },
+      {
+        "id": "hand-made-d30-watchstone-uses-remaining",
+        "verified": false,
+        "w": 1,
+        "h": 1,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQXRsYXMvV2F0Y2hzdG9uZXMvSXZvcnlXYXRjaHN0b25lIiwic2NhbGUiOjF9XQ/hand-made/IvoryWatchstone.png",
+        "name": "",
+        "typeLine": "Ivory Watchstone",
+        "baseType": "Ivory Watchstone",
+        "identified": true,
+        "ilvl": 84,
+        "explicitMods": [
+          { "description": "Your Maps contain 2 additional Packs of Monsters" },
+          { "description": "15 uses remaining" }
+        ],
+        "frameType": 0,
+        "x": 1,
+        "y": 0,
+        "inventoryId": "Stash2"
+      },
+      {
+        "id": "hand-made-d31-impresence-cold",
+        "verified": false,
+        "w": 1,
+        "h": 1,
+        "icon": "https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQW11bGV0cy9FbGRlckFtdWxldENvbGQiLCJ3IjoxLCJoIjoxLCJzY2FsZSI6MX1d/hand-made/ElderAmuletCold.png",
+        "name": "Impresence",
+        "typeLine": "Onyx Amulet",
+        "baseType": "Onyx Amulet",
+        "identified": true,
+        "ilvl": 84,
+        "implicitMods": [{ "description": "+13 to all Attributes" }],
+        "explicitMods": [
+          { "description": "Adds 9 to 18 Cold Damage" },
+          { "description": "+60 to maximum Life" },
+          { "description": "Hatred has 20% increased Mana Reservation Efficiency" }
+        ],
+        "frameType": 3,
+        "x": 2,
+        "y": 0,
+        "inventoryId": "Stash3"
+      }
+    ]
+  }
+}
