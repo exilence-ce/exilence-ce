@@ -294,11 +294,14 @@ jobs:
   # The AUR packages follow stable releases only. Each PKGBUILD in
   # packaging/aur/ gets this version and fresh checksums, then goes to the
   # AUR with its .SRCINFO. The release must be downloadable: a public repo.
+  # Off until the repository variable AUR_PUBLISH is `true` (AUR account
+  # registration is closed for now): `gh variable set AUR_PUBLISH --body true`.
   aur:
     name: Update the AUR packages
     needs: update-files
     if: >-
-      github.event_name == 'release'
+      vars.AUR_PUBLISH == 'true'
+      && github.event_name == 'release'
       && startsWith(github.event.release.tag_name, 'v')
       && !github.event.release.prerelease
     runs-on: ubuntu-24.04

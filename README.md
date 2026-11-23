@@ -36,10 +36,6 @@ xattr -dr com.apple.quarantine "/Applications/Exilence CE NG.app"
 
 You do this once; updates keep working without it.
 
-### Arch Linux: AUR
-
-Install [`exilence-ce-bin`](https://aur.archlinux.org/packages/exilence-ce-bin) (the release build) or [`exilence-ce`](https://aur.archlinux.org/packages/exilence-ce) (built from source) with your AUR helper, e.g. `paru -S exilence-ce-bin`. Both follow stable releases, and pacman updates them: the app does not update itself and has no release channel.
-
 ### Linux: glibc 2.39 or newer
 
 The AppImage, `.deb` and `.rpm` run on Linux x64 with glibc 2.39 or newer: Ubuntu 24.04, Fedora 40, Debian 13 and later. `ldd --version` shows yours. Make the AppImage executable (`chmod +x Exilence-CE-NG_*_amd64.AppImage`) and start it. If it does not start, install FUSE 2 (`sudo apt install libfuse2t64` on Ubuntu 24.04).
