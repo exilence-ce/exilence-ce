@@ -216,8 +216,10 @@ fn add_profile(profiles: &mut Vec<Profile>, mut other: Profile) {
     if other.newest() >= merged.newest() {
         std::mem::swap(merged, &mut other);
     }
+    let mut seen: std::collections::HashSet<String> =
+        merged.snapshots.iter().map(|s| s.id.clone()).collect();
     for snapshot in other.snapshots {
-        if !merged.snapshots.iter().any(|s| s.id == snapshot.id) {
+        if seen.insert(snapshot.id.clone()) {
             merged.snapshots.push(snapshot);
         }
     }
@@ -236,8 +238,9 @@ fn sort_newest_first(snapshots: &mut [Snapshot]) {
 fn profile(legacy: &model::Profile) -> Option<Profile> {
     let id = legacy.uuid.clone().filter(|id| !id.is_empty())?;
     let mut snapshots: Vec<Snapshot> = Vec::new();
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     for snapshot in legacy.snapshots.iter().flatten().filter_map(snapshot) {
-        if !snapshots.iter().any(|s| s.id == snapshot.id) {
+        if seen.insert(snapshot.id.clone()) {
             snapshots.push(snapshot);
         }
     }

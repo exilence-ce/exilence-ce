@@ -55,6 +55,8 @@ pub async fn open(dir: &Path) -> Result<SqlitePool, OpenError> {
         .foreign_keys(true)
         .journal_mode(SqliteJournalMode::Wal)
         .synchronous(SqliteSynchronous::Normal)
+        .pragma("temp_store", "MEMORY")
+        .pragma("cache_size", "-16000")
         .busy_timeout(Duration::from_secs(5));
     let pool = SqlitePool::connect_with(options)
         .await

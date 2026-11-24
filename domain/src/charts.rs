@@ -123,27 +123,67 @@ pub struct TabSeries {
 /// `snapshots` (any order). The Character pseudo-tab is not charted; a
 /// selected tab none of those Snapshots holds has no line.
 pub fn tab_series(snapshots: &[SnapshotTabs], selected: &[String]) -> Vec<TabSeries> {
+    if snapshots.is_empty() || selected.is_empty() {
+        return Vec::new();
+    }
     let mut newest: Vec<&SnapshotTabs> = snapshots.iter().collect();
-    newest.sort_by_key(|s| std::cmp::Reverse(s.at));
-    newest.truncate(TAB_CHART_SNAPSHOTS);
-    selected
-        .iter()
-        .filter(|id| !id.is_empty())
-        .filter_map(|id| {
-            // Newest first, so the first match names the series.
-            let mut held = newest
-                .iter()
-                .filter_map(|s| s.tabs.iter().find(|t| t.tab_id == *id).map(|t| (s.at, t)));
-            let (at, newest_tab) = held.next()?;
-            let mut points: Vec<Point> = std::iter::once((at, newest_tab))
-                .chain(held)
-                .map(|(at, t)| Point { at, value: t.value })
-                .collect();
-            points.reverse();
+    if newest.len() > TAB_CHART_SNAPSHOTS {
+        newest.select_nth_unstable_by_key(TAB_CHART_SNAPSHOTS, |s| std::cmp::Reverse(s.at));
+        newest.truncate(TAB_CHART_SNAPSHOTS);
+    }
+    newest.sort_by_key(|s| s.at);
+
+    struct Accum<'a> {
+        id: &'a str,
+        name: Option<&'a str>,
+        points: Vec<Point>,
+        last_snap: Option<usize>,
+    }
+
+    let mut by_id: std::collections::HashMap<&str, Vec<usize>> =
+        std::collections::HashMap::with_capacity(selected.len());
+    let mut accum: Vec<Accum<'_>> = Vec::with_capacity(selected.len());
+    for id in selected.iter().filter(|id| !id.is_empty()) {
+        let idx = accum.len();
+        accum.push(Accum {
+            id: id.as_str(),
+            name: None,
+            points: Vec::new(),
+            last_snap: None,
+        });
+        by_id.entry(id.as_str()).or_default().push(idx);
+    }
+    if accum.is_empty() {
+        return Vec::new();
+    }
+
+    for (snap_idx, s) in newest.iter().enumerate() {
+        for t in &s.tabs {
+            if let Some(indices) = by_id.get(t.tab_id.as_str()) {
+                for &idx in indices {
+                    let entry = &mut accum[idx];
+                    // First matching tab per snapshot wins, matching `.find()`.
+                    if entry.last_snap != Some(snap_idx) {
+                        entry.last_snap = Some(snap_idx);
+                        entry.name = Some(t.name.as_str());
+                        entry.points.push(Point {
+                            at: s.at,
+                            value: t.value,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    accum
+        .into_iter()
+        .filter_map(|entry| {
+            let name = entry.name?;
             Some(TabSeries {
-                tab_id: id.clone(),
-                name: newest_tab.name.clone(),
-                points,
+                tab_id: entry.id.to_owned(),
+                name: name.to_owned(),
+                points: entry.points,
             })
         })
         .collect()

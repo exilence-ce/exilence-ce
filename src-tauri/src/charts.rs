@@ -22,14 +22,29 @@ pub async fn load(
     time_span: TimeSpan,
     now: i64,
 ) -> sqlx::Result<Charts> {
-    let totals: Vec<(i64, f64)> = sqlx::query_as(
-        "SELECT created_at, total_value FROM snapshots \
-         WHERE account_id = ?1 AND profile_id = ?2",
-    )
-    .bind(account_id)
-    .bind(&profile.id)
-    .fetch_all(pool)
-    .await?;
+    let totals: Vec<(i64, f64)> = match domain_span(time_span).millis() {
+        Some(length) => {
+            sqlx::query_as(
+                "SELECT created_at, total_value FROM snapshots \
+                 WHERE account_id = ?1 AND profile_id = ?2 AND created_at > ?3",
+            )
+            .bind(account_id)
+            .bind(&profile.id)
+            .bind(now - length)
+            .fetch_all(pool)
+            .await?
+        }
+        None => {
+            sqlx::query_as(
+                "SELECT created_at, total_value FROM snapshots \
+                 WHERE account_id = ?1 AND profile_id = ?2",
+            )
+            .bind(account_id)
+            .bind(&profile.id)
+            .fetch_all(pool)
+            .await?
+        }
+    };
     let totals: Vec<DomainPoint> = totals
         .into_iter()
         .map(|(at, value)| DomainPoint { at, value })
@@ -113,7 +128,12 @@ pub async fn push<R: Runtime>(app: &AppHandle<R>) {
     let _pushing = pushing.lock().await;
     let pool = app.state::<SqlitePool>();
     let store = app.state::<Store>();
-    let profiles = store.read(Profiles::clone);
+    let profile = store.read(|p: &Profiles| {
+        p.active_profile_id
+            .as_ref()
+            .and_then(|id| p.profiles.iter().find(|pr| pr.id == *id))
+            .cloned()
+    });
     let time_span = store.read(|s: &Settings| s.chart_time_span);
     let now = app.state::<Scheduler>().now();
     // In a Group: each player's name, whether selected and the account's
@@ -133,7 +153,15 @@ pub async fn push<R: Runtime>(app: &AppHandle<R>) {
         let account_id: Option<String> = sqlx::query_scalar("SELECT account_id FROM login")
             .fetch_optional(&*pool)
             .await?;
-        load_active(&pool, account_id.as_deref(), &profiles, time_span, now).await
+        match (account_id.as_deref(), profile.as_ref()) {
+            (Some(account_id), Some(profile)) => {
+                load(&pool, account_id, profile, time_span, now).await
+            }
+            _ => Ok(Charts {
+                time_span,
+                ..Charts::default()
+            }),
+        }
     }
     .await;
     let loaded = loaded.map(|mut charts| {

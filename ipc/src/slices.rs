@@ -206,12 +206,14 @@ pub struct ItemRow {
 impl ItemRow {
     /// The names of the tabs holding the item, comma-separated.
     pub fn tab_names(&self, tabs: &[ItemTab]) -> String {
-        self.tabs
-            .iter()
-            .filter_map(|t| tabs.get(t.tab as usize))
-            .map(|t| t.name.as_str())
-            .collect::<Vec<_>>()
-            .join(", ")
+        let mut out = String::new();
+        for tab in self.tabs.iter().filter_map(|t| tabs.get(t.tab as usize)) {
+            if !out.is_empty() {
+                out.push_str(", ");
+            }
+            out.push_str(&tab.name);
+        }
+        out
     }
 }
 

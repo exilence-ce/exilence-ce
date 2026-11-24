@@ -47,7 +47,7 @@ pub fn RemoveSnapshotsControl(state: State) -> impl IntoView {
 #[component]
 fn RemoveSnapshotsDialog(on_close: Callback<()>) -> impl IntoView {
     let entries = RwSignal::new(None::<Vec<SnapshotEntry>>);
-    let checked = RwSignal::new(Vec::<String>::new());
+    let checked = RwSignal::new(std::collections::HashSet::<String>::new());
     let removing = RwSignal::new(false);
     spawn_local(async move {
         match tauri::invoke::<ListSnapshots>(&NoArgs {}).await {
@@ -63,7 +63,14 @@ fn RemoveSnapshotsDialog(on_close: Callback<()>) -> impl IntoView {
         checked.set(all);
     };
     let remove = move |_| {
-        let snapshot_ids = checked.get_untracked();
+        let selected = checked.get_untracked();
+        let snapshot_ids: Vec<String> = entries.with_untracked(|e| {
+            e.iter()
+                .flatten()
+                .filter(|s| selected.contains(&s.id))
+                .map(|s| s.id.clone())
+                .collect()
+        });
         removing.set(true);
         spawn_local(async move {
             let removed =
@@ -76,13 +83,12 @@ fn RemoveSnapshotsDialog(on_close: Callback<()>) -> impl IntoView {
         });
     };
     let list = move || {
-        let selected = checked.get();
         entries.with(|e| {
             e.iter()
                 .flatten()
                 .map(|entry| {
-                    let id = entry.id.clone();
-                    let is_checked = selected.contains(&entry.id);
+                    let id_check = entry.id.clone();
+                    let id_toggle = entry.id.clone();
                     let text = LOCALE.text(&entry_message(
                         &local_time(entry.created_at),
                         entry.total_value,
@@ -92,8 +98,8 @@ fn RemoveSnapshotsDialog(on_close: Callback<()>) -> impl IntoView {
                             <label>
                                 <input
                                     type="checkbox"
-                                    prop:checked=is_checked
-                                    on:change=move |_| checked.update(|c| toggle(c, &id))
+                                    prop:checked=move || checked.with(|c| c.contains(&id_check))
+                                    on:change=move |_| checked.update(|c| toggle(c, &id_toggle))
                                 />
                                 <span class="entry">{text}</span>
                                 <Show when={
@@ -133,7 +139,7 @@ fn RemoveSnapshotsDialog(on_close: Callback<()>) -> impl IntoView {
                     </button>
                     <button
                         class="primary"
-                        disabled=move || removing.get() || checked.with(Vec::is_empty)
+                        disabled=move || removing.get() || checked.with(std::collections::HashSet::is_empty)
                         on:click=remove
                     >
                         {LOCALE.key(MessageKey::SnapshotsRemove)}
@@ -145,12 +151,9 @@ fn RemoveSnapshotsDialog(on_close: Callback<()>) -> impl IntoView {
 }
 
 /// Checks `id` when unchecked, unchecks it otherwise.
-fn toggle(checked: &mut Vec<String>, id: &str) {
-    match checked.iter().position(|c| c == id) {
-        Some(at) => {
-            checked.remove(at);
-        }
-        None => checked.push(id.to_owned()),
+fn toggle(checked: &mut std::collections::HashSet<String>, id: &str) {
+    if !checked.remove(id) {
+        checked.insert(id.to_owned());
     }
 }
 
@@ -197,11 +200,11 @@ mod tests {
 
     #[test]
     fn f12_toggle_checks_and_unchecks() {
-        let mut checked = Vec::new();
+        let mut checked = std::collections::HashSet::new();
         toggle(&mut checked, "s1");
         toggle(&mut checked, "s2");
-        assert_eq!(checked, ["s1", "s2"]);
+        assert!(checked.contains("s1") && checked.contains("s2") && checked.len() == 2);
         toggle(&mut checked, "s1");
-        assert_eq!(checked, ["s2"]);
+        assert!(!checked.contains("s1") && checked.contains("s2") && checked.len() == 1);
     }
 }

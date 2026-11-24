@@ -6,7 +6,7 @@
 //! Legacy merges looser than definitions differ: a map's quality, a
 //! non-seed's item level and variants do not split rows.
 
-use std::collections::HashMap;
+use std::collections::hash_map::{Entry, HashMap};
 
 use crate::item_definition::{ItemDefinition, frame_type};
 
@@ -41,35 +41,72 @@ impl MergedRow<'_> {
     }
 }
 
+enum Indices {
+    One(usize),
+    Many(Vec<usize>),
+}
+
+impl Indices {
+    fn push(&mut self, index: usize) {
+        match self {
+            Self::One(first) => *self = Self::Many(vec![*first, index]),
+            Self::Many(rest) => rest.push(index),
+        }
+    }
+
+    fn as_slice(&self) -> &[usize] {
+        match self {
+            Self::One(first) => std::slice::from_ref(first),
+            Self::Many(rest) => rest.as_slice(),
+        }
+    }
+}
+
 /// Merges `rows` into one row per item, in the order items are first seen.
 pub fn merge<'a>(rows: impl IntoIterator<Item = TabRow<'a>>) -> Vec<MergedRow<'a>> {
-    let mut merged: Vec<MergedRow<'a>> = Vec::new();
+    let rows = rows.into_iter();
+    let cap = rows.size_hint().0;
+    let mut merged: Vec<MergedRow<'a>> = Vec::with_capacity(cap);
     // Every legacy rule compares the name first.
-    let mut by_name: HashMap<&'a str, Vec<usize>> = HashMap::new();
+    let mut by_name: HashMap<&'a str, Indices> = HashMap::with_capacity(cap);
     for row in rows {
         let quantity = u64::from(row.stack_size);
-        let named = by_name.entry(row.definition.name.as_str()).or_default();
-        let found = named
-            .iter()
-            .copied()
-            .find(|&i| same_item(merged[i].definition, row.definition));
-        match found {
-            Some(i) => {
-                let item = &mut merged[i];
-                item.quantity += quantity;
-                match item.tabs.iter_mut().find(|(tab, _)| *tab == row.tab) {
-                    Some((_, in_tab)) => *in_tab += quantity,
-                    None => item.tabs.push((row.tab, quantity)),
-                }
-            }
-            None => {
-                named.push(merged.len());
+        match by_name.entry(row.definition.name.as_str()) {
+            Entry::Vacant(entry) => {
+                entry.insert(Indices::One(merged.len()));
                 merged.push(MergedRow {
                     definition: row.definition,
                     price: row.price,
                     quantity,
                     tabs: vec![(row.tab, quantity)],
                 });
+            }
+            Entry::Occupied(mut entry) => {
+                let found = entry
+                    .get()
+                    .as_slice()
+                    .iter()
+                    .copied()
+                    .find(|&i| same_item(merged[i].definition, row.definition));
+                match found {
+                    Some(i) => {
+                        let item = &mut merged[i];
+                        item.quantity += quantity;
+                        match item.tabs.iter_mut().find(|(tab, _)| *tab == row.tab) {
+                            Some((_, in_tab)) => *in_tab += quantity,
+                            None => item.tabs.push((row.tab, quantity)),
+                        }
+                    }
+                    None => {
+                        entry.get_mut().push(merged.len());
+                        merged.push(MergedRow {
+                            definition: row.definition,
+                            price: row.price,
+                            quantity,
+                            tabs: vec![(row.tab, quantity)],
+                        });
+                    }
+                }
             }
         }
     }
@@ -113,15 +150,37 @@ pub struct Difference<'a> {
 /// items negated. Rows without a change in quantity or value are dropped.
 /// A Snapshot without item detail passes no rows.
 pub fn compare<'a>(older: &[MergedRow<'a>], newer: &[MergedRow<'a>]) -> Vec<Difference<'a>> {
-    let find = |rows: &[MergedRow<'a>], item: &MergedRow<'a>| {
-        rows.iter()
-            .position(|r| same_item(r.definition, item.definition))
+    let index_by_name = |rows: &[MergedRow<'a>]| {
+        let mut by_name: HashMap<&'a str, Indices> = HashMap::with_capacity(rows.len());
+        for (i, r) in rows.iter().enumerate() {
+            match by_name.entry(r.definition.name.as_str()) {
+                Entry::Vacant(entry) => {
+                    entry.insert(Indices::One(i));
+                }
+                Entry::Occupied(mut entry) => entry.get_mut().push(i),
+            }
+        }
+        by_name
     };
+    let older_by_name = index_by_name(older);
+    let newer_by_name = index_by_name(newer);
+    let find =
+        |rows: &[MergedRow<'a>], by_name: &HashMap<&'a str, Indices>, item: &MergedRow<'a>| {
+            by_name
+                .get(item.definition.name.as_str())
+                .and_then(|indices| {
+                    indices
+                        .as_slice()
+                        .iter()
+                        .copied()
+                        .find(|&i| same_item(rows[i].definition, item.definition))
+                })
+        };
     let signed = |quantity: u64| i64::try_from(quantity).unwrap_or(i64::MAX);
     let mut changed = Vec::new();
     let mut added = Vec::new();
     for item in newer {
-        match find(older, item) {
+        match find(older, &older_by_name, item) {
             Some(i) if older[i].quantity != item.quantity => changed.push(Difference {
                 definition: item.definition,
                 price: item.price,
@@ -139,7 +198,7 @@ pub fn compare<'a>(older: &[MergedRow<'a>], newer: &[MergedRow<'a>]) -> Vec<Diff
     }
     let vanished = older
         .iter()
-        .filter(|item| find(newer, item).is_none())
+        .filter(|item| find(newer, &newer_by_name, item).is_none())
         .map(|item| Difference {
             definition: item.definition,
             price: item.price,
@@ -163,16 +222,31 @@ pub fn merge_comparisons<'a>(
     players: impl IntoIterator<Item = Vec<Difference<'a>>>,
 ) -> Vec<Difference<'a>> {
     let mut merged: Vec<Difference<'a>> = Vec::new();
+    let mut by_name: HashMap<&'a str, Indices> = HashMap::new();
     for difference in players.into_iter().flatten() {
-        match merged
-            .iter_mut()
-            .find(|m| same_item(m.definition, difference.definition))
-        {
-            Some(item) => {
-                item.quantity += difference.quantity;
-                item.total += difference.total;
+        match by_name.entry(difference.definition.name.as_str()) {
+            Entry::Vacant(entry) => {
+                entry.insert(Indices::One(merged.len()));
+                merged.push(difference);
             }
-            None => merged.push(difference),
+            Entry::Occupied(mut entry) => {
+                let found = entry
+                    .get()
+                    .as_slice()
+                    .iter()
+                    .copied()
+                    .find(|&i| same_item(merged[i].definition, difference.definition));
+                match found {
+                    Some(i) => {
+                        merged[i].quantity += difference.quantity;
+                        merged[i].total += difference.total;
+                    }
+                    None => {
+                        entry.get_mut().push(merged.len());
+                        merged.push(difference);
+                    }
+                }
+            }
         }
     }
     merged.retain(|d| d.quantity != 0 && d.total != 0.0);

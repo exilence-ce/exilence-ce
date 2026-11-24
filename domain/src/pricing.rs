@@ -6,7 +6,7 @@
 
 pub mod ninja;
 
-use std::collections::HashMap;
+use std::collections::hash_map::{Entry, HashMap};
 
 use serde::Deserialize;
 
@@ -135,8 +135,37 @@ const THRESHOLD_EXEMPT_ITEMS: [&str; 4] = [
 /// entry's name first, so entries are grouped by name in price-list order.
 #[derive(Debug)]
 pub struct PriceTable<'a> {
-    by_name: HashMap<&'a str, Vec<Candidate<'a>>>,
+    by_name: HashMap<&'a str, Candidates<'a>>,
     total_price_threshold: f64,
+}
+
+#[derive(Debug)]
+enum Candidates<'a> {
+    One(Candidate<'a>),
+    Many(Vec<Candidate<'a>>),
+}
+
+impl<'a> Candidates<'a> {
+    fn push(&mut self, candidate: Candidate<'a>) {
+        match self {
+            Self::One(first) => *self = Self::Many(vec![*first, candidate]),
+            Self::Many(rest) => rest.push(candidate),
+        }
+    }
+
+    fn as_slice(&self) -> &[Candidate<'a>] {
+        match self {
+            Self::One(first) => std::slice::from_ref(first),
+            Self::Many(rest) => rest.as_slice(),
+        }
+    }
+
+    fn as_mut_slice(&mut self) -> &mut [Candidate<'a>] {
+        match self {
+            Self::One(first) => std::slice::from_mut(first),
+            Self::Many(rest) => rest.as_mut_slice(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -171,23 +200,33 @@ impl<'a> PriceTable<'a> {
         );
         surviving.retain(|p| !INVALID_ITEMS.contains(&p.key.name.as_str()));
 
-        let mut custom: Vec<Option<f64>> = vec![None; surviving.len()];
-        for price in custom_prices {
-            if let Some(i) = surviving.iter().position(|p| p.key == price.key) {
-                custom[i] = Some(price.value);
+        let mut by_name: HashMap<&str, Candidates<'_>> = HashMap::with_capacity(surviving.len());
+        for entry in surviving {
+            let candidate = Candidate {
+                entry,
+                key: &entry.key,
+                unit_price: entry.calculated,
+            };
+            match by_name.entry(entry.key.name.as_str()) {
+                Entry::Vacant(slot) => {
+                    slot.insert(Candidates::One(candidate));
+                }
+                Entry::Occupied(mut slot) => slot.get_mut().push(candidate),
             }
         }
-
-        let mut by_name: HashMap<&str, Vec<Candidate>> = HashMap::new();
-        for (entry, custom) in surviving.into_iter().zip(custom) {
-            by_name
-                .entry(entry.key.name.as_str())
-                .or_default()
-                .push(Candidate {
-                    entry,
-                    key: &entry.key,
-                    unit_price: custom.filter(|v| *v != 0.0).unwrap_or(entry.calculated),
-                });
+        for price in custom_prices {
+            if let Some(candidates) = by_name.get_mut(price.key.name.as_str())
+                && let Some(candidate) = candidates
+                    .as_mut_slice()
+                    .iter_mut()
+                    .find(|c| *c.key == price.key)
+            {
+                candidate.unit_price = if price.value != 0.0 {
+                    price.value
+                } else {
+                    candidate.entry.calculated
+                };
+            }
         }
         Self {
             by_name,
@@ -214,7 +253,11 @@ impl<'a> PriceTable<'a> {
     }
 
     fn named(&self, name: &str) -> impl Iterator<Item = &Candidate<'a>> {
-        self.by_name.get(name).into_iter().flatten()
+        self.by_name
+            .get(name)
+            .map(Candidates::as_slice)
+            .into_iter()
+            .flatten()
     }
 
     fn matching_entry(&self, item: &ItemDefinition) -> Option<&Candidate<'a>> {
@@ -236,13 +279,30 @@ impl<'a> PriceTable<'a> {
                 }
             }
             frame_type::UNIQUE => {
-                let item_prices: Vec<_> = named.filter(|p| unique_matches(p.key, item)).collect();
-                let mut quality_prices = item_prices
-                    .iter()
-                    .filter(|p| p.key.quality.is_none_or(|q| q == 0 || q == item.quality));
-                match (quality_prices.next(), quality_prices.next()) {
-                    (Some(price), None) => Some(price),
-                    _ => only(item_prices.into_iter().filter(|p| p.key.quality == Some(0))),
+                let mut qual_match: Option<&Candidate<'a>> = None;
+                let mut qual_count = 0usize;
+                let mut q0_match: Option<&Candidate<'a>> = None;
+                let mut q0_count = 0usize;
+                for p in named.filter(|p| unique_matches(p.key, item)) {
+                    if p.key.quality.is_none_or(|q| q == 0 || q == item.quality) {
+                        qual_count += 1;
+                        if qual_count == 1 {
+                            qual_match = Some(p);
+                        }
+                    }
+                    if p.key.quality == Some(0) {
+                        q0_count += 1;
+                        if q0_count == 1 {
+                            q0_match = Some(p);
+                        }
+                    }
+                }
+                if qual_count == 1 {
+                    qual_match
+                } else if q0_count == 1 {
+                    q0_match
+                } else {
+                    None
                 }
             }
             frame_type::GEM => only(named.filter(|p| gem_matches(p.key, item))),
@@ -278,47 +338,48 @@ impl<'a> PriceTable<'a> {
     /// rows, drops rows whose total is 0 or below the total threshold (F5),
     /// and sums the rest into the tab value.
     pub fn price_tabs(&self, tabs: &[TabItems]) -> PricedSnapshot {
-        let mut unit_prices: HashMap<ItemDefinition, Option<f64>> = HashMap::new();
-        let mut definition_index: HashMap<ItemDefinition, usize> = HashMap::new();
-        let mut definitions = Vec::new();
+        let mut interned: HashMap<ItemDefinition, usize> = HashMap::new();
+        let mut pool: Vec<(Option<f64>, Option<usize>)> = Vec::new();
+        let mut next_def_index = 0usize;
         let tabs = tabs
             .iter()
             .map(|tab| {
-                let mut merged: Vec<(ItemDefinition, u32)> = Vec::new();
-                let mut row_of: HashMap<ItemDefinition, usize> = HashMap::new();
+                let mut merged: Vec<(usize, u32)> = Vec::new();
+                let mut row_of: HashMap<usize, usize> = HashMap::new();
                 for item in &tab.items {
                     let definition = ItemDefinition::from_item(item);
+                    let id = match interned.get(&definition) {
+                        Some(&id) => id,
+                        None => {
+                            let price = self.unit_price(&definition);
+                            let id = pool.len();
+                            pool.push((price, None));
+                            interned.insert(definition, id);
+                            id
+                        }
+                    };
                     let stack_size = item.stack_size.filter(|s| *s > 0).unwrap_or(1);
-                    match row_of.get(&definition) {
+                    match row_of.get(&id) {
                         Some(&row) => merged[row].1 = merged[row].1.saturating_add(stack_size),
                         None => {
-                            row_of.insert(definition.clone(), merged.len());
-                            merged.push((definition, stack_size));
+                            row_of.insert(id, merged.len());
+                            merged.push((id, stack_size));
                         }
                     }
                 }
 
                 let mut rows = Vec::new();
-                for (definition, stack_size) in merged {
-                    let unit_price = match unit_prices.get(&definition) {
-                        Some(&price) => price,
-                        None => {
-                            let price = self.unit_price(&definition);
-                            unit_prices.insert(definition.clone(), price);
-                            price
-                        }
-                    };
-                    let Some(price) = unit_price else { continue };
+                for (id, stack_size) in merged {
+                    let (unit_price, out_idx) = &mut pool[id];
+                    let Some(price) = *unit_price else { continue };
                     let total = f64::from(stack_size) * price;
                     if total <= 0.0 || total < self.total_price_threshold {
                         continue;
                     }
-                    let definition = *definition_index.entry(definition).or_insert_with_key(|d| {
-                        definitions.push(PricedDefinition {
-                            definition: d.clone(),
-                            price,
-                        });
-                        definitions.len() - 1
+                    let definition = *out_idx.get_or_insert_with(|| {
+                        let idx = next_def_index;
+                        next_def_index += 1;
+                        idx
                     });
                     rows.push(ItemRow {
                         definition,
@@ -333,6 +394,13 @@ impl<'a> PriceTable<'a> {
                 }
             })
             .collect();
+        let mut slots: Vec<Option<PricedDefinition>> = vec![None; next_def_index];
+        for (definition, id) in interned {
+            if let (Some(price), Some(out_idx)) = pool[id] {
+                slots[out_idx] = Some(PricedDefinition { definition, price });
+            }
+        }
+        let definitions = slots.into_iter().flatten().collect();
         PricedSnapshot { definitions, tabs }
     }
 }

@@ -865,10 +865,23 @@ fn log_failed(command: &str, error: &InvokeError) {
 
 /// The indices of `rows` whose name contains `filter`, ignoring case (F6).
 fn matching_rows(rows: &[PriceTableRow], filter: &str) -> Vec<usize> {
+    if filter.is_empty() {
+        return (0..rows.len()).collect();
+    }
     let filter = filter.to_lowercase();
+    let mut scratch = String::new();
     rows.iter()
         .enumerate()
-        .filter(|(_, row)| row.key.name.to_lowercase().contains(&filter))
+        .filter(|(_, row)| {
+            scratch.clear();
+            if row.key.name.is_ascii() {
+                scratch.push_str(&row.key.name);
+                scratch.make_ascii_lowercase();
+            } else {
+                scratch.extend(row.key.name.chars().flat_map(char::to_lowercase));
+            }
+            scratch.contains(&filter)
+        })
         .map(|(i, _)| i)
         .collect()
 }

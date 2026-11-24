@@ -132,7 +132,13 @@ pub struct Onboarding {
 pub fn TitleBar(state: State, onboarding: Onboarding) -> impl IntoView {
     let maximized = RwSignal::new(false);
     spawn_local(async move {
-        if let Err(error) = tauri::watch_maximized(move |m| maximized.set(m)).await {
+        if let Err(error) = tauri::watch_maximized(move |m| {
+            if maximized.get_untracked() != m {
+                maximized.set(m);
+            }
+        })
+        .await
+        {
             tauri::log(
                 ipc::command::LogLevel::Error,
                 format!("watch maximized: {error}"),

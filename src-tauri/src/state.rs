@@ -16,7 +16,7 @@
 //! that change, and the slice would keep the older value.
 
 use std::marker::PhantomData;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use ipc::slices::{Notification, NotificationKind, Notifications, Toast};
 use ipc::{Event, Message, Slice, SliceName, Slices};
@@ -45,7 +45,7 @@ impl<S> Pushing<S> {
 /// The state store, managed by the app.
 #[derive(Default)]
 pub struct Store {
-    slices: Mutex<Slices>,
+    slices: RwLock<Slices>,
     /// Held while an event goes out or a listener registers.
     events: Mutex<()>,
 }
@@ -54,19 +54,19 @@ impl Store {
     /// A store holding `slices`.
     pub fn new(slices: Slices) -> Self {
         Self {
-            slices: Mutex::new(slices),
+            slices: RwLock::new(slices),
             events: Mutex::default(),
         }
     }
 
     /// Reads slice `S` with `read`.
     pub fn read<S: Slice, T>(&self, read: impl FnOnce(&S) -> T) -> T {
-        read(S::get(&self.lock()))
+        read(S::get(&self.read_lock()))
     }
 
     /// The current value of each named slice, in order.
     pub fn get(&self, names: &[SliceName]) -> Vec<Event> {
-        let slices = self.lock();
+        let slices = self.read_lock();
         names.iter().map(|&name| slices.event(name)).collect()
     }
 
@@ -82,7 +82,7 @@ impl Store {
     ) -> tauri::Result<()> {
         let _events = self.events();
         let (name, payload) = {
-            let mut slices = self.lock();
+            let mut slices = self.write_lock();
             let slice = S::get_mut(&mut slices);
             change(slice);
             let event = slice.as_event();
@@ -91,10 +91,14 @@ impl Store {
         app.emit_str(name, payload)
     }
 
-    fn lock(&self) -> MutexGuard<'_, Slices> {
+    fn read_lock(&self) -> RwLockReadGuard<'_, Slices> {
         // A panicking change leaves a valid, if partly changed, slice; keep
         // serving it rather than failing every later command.
-        self.slices.lock().unwrap_or_else(|e| e.into_inner())
+        self.slices.read().unwrap_or_else(|e| e.into_inner())
+    }
+
+    fn write_lock(&self) -> RwLockWriteGuard<'_, Slices> {
+        self.slices.write().unwrap_or_else(|e| e.into_inner())
     }
 
     fn events(&self) -> MutexGuard<'_, ()> {

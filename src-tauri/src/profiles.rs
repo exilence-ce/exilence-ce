@@ -274,9 +274,7 @@ pub async fn push<R: Runtime>(app: &AppHandle<R>) {
         }
     }
     stash_tabs::follow_active(app);
-    net_worth::push(app).await;
-    items::push(app).await;
-    charts::push(app).await;
+    tokio::join!(net_worth::push(app), items::push(app), charts::push(app),);
     prices::follow_active(app).await;
 }
 

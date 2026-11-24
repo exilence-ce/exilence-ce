@@ -115,6 +115,33 @@ pub fn sort_rows(rows: &mut [ItemRow], tabs: &[ItemTab], sort: ItemTableSort) {
     if !sortable(sort.column) {
         return;
     }
+    if sort.column == ItemColumn::Tabs {
+        let mut keyed: Vec<(usize, String)> = rows
+            .iter()
+            .enumerate()
+            .map(|(i, r)| (i, r.tab_names(tabs)))
+            .collect();
+        keyed.sort_by(|a, b| {
+            let order = alphanumeric(&a.1, &b.1);
+            if sort.descending {
+                order.reverse()
+            } else {
+                order
+            }
+        });
+        let mut perm: Vec<usize> = keyed.into_iter().map(|(i, _)| i).collect();
+        for i in 0..perm.len() {
+            let mut dst = i;
+            while perm[dst] != i {
+                let src = perm[dst];
+                rows.swap(dst, src);
+                perm[dst] = dst;
+                dst = src;
+            }
+            perm[dst] = dst;
+        }
+        return;
+    }
     rows.sort_by(|a, b| {
         let order = compare(a, b, sort.column, tabs);
         if sort.descending {
@@ -156,39 +183,39 @@ fn compare(a: &ItemRow, b: &ItemRow, column: ItemColumn, tabs: &[ItemTab]) -> Or
 /// react-table's `alphanumeric` sort type: digit runs compare as numbers,
 /// other runs as text (case-sensitive), text before numbers, and a prefix
 /// first.
-fn alphanumeric(a: &str, b: &str) -> Ordering {
-    let (a, b) = (runs(a), runs(b));
-    for (x, y) in a.iter().zip(&b) {
-        let order = match (x.parse::<f64>(), y.parse::<f64>()) {
-            (Ok(x), Ok(y)) => x.total_cmp(&y),
-            (Ok(_), Err(_)) => Ordering::Greater,
-            (Err(_), Ok(_)) => Ordering::Less,
-            (Err(_), Err(_)) => x.cmp(y),
-        };
-        if order != Ordering::Equal {
-            return order;
+fn alphanumeric(mut a: &str, mut b: &str) -> Ordering {
+    loop {
+        match (next_run(&mut a), next_run(&mut b)) {
+            (Some(x), Some(y)) => {
+                let order = match (x.parse::<f64>(), y.parse::<f64>()) {
+                    (Ok(x), Ok(y)) => x.total_cmp(&y),
+                    (Ok(_), Err(_)) => Ordering::Greater,
+                    (Err(_), Ok(_)) => Ordering::Less,
+                    (Err(_), Err(_)) => x.cmp(y),
+                };
+                if order != Ordering::Equal {
+                    return order;
+                }
+            }
+            (Some(_), None) => return Ordering::Greater,
+            (None, Some(_)) => return Ordering::Less,
+            (None, None) => return Ordering::Equal,
         }
     }
-    a.len().cmp(&b.len())
 }
 
-/// `text` split into its runs of digits and of everything else.
-fn runs(text: &str) -> Vec<&str> {
-    let mut runs = Vec::new();
-    let mut start = 0;
-    let mut digits = None;
-    for (i, c) in text.char_indices() {
-        let digit = c.is_ascii_digit();
-        if digits.is_some_and(|d| d != digit) {
-            runs.push(&text[start..i]);
-            start = i;
-        }
-        digits = Some(digit);
-    }
-    if start < text.len() {
-        runs.push(&text[start..]);
-    }
-    runs
+/// Pops the next run of ASCII digits or non-digits from `rest`.
+fn next_run<'a>(rest: &mut &'a str) -> Option<&'a str> {
+    let first = rest.chars().next()?;
+    let digits = first.is_ascii_digit();
+    let split = rest
+        .char_indices()
+        .skip(1)
+        .find(|&(_, c)| c.is_ascii_digit() != digits)
+        .map_or(rest.len(), |(i, _)| i);
+    let (run, tail) = rest.split_at(split);
+    *rest = tail;
+    Some(run)
 }
 
 /// The Ilvl / Tier column: a map's tier, else the item level.
@@ -222,13 +249,18 @@ impl Filter {
                 .iter()
                 .position(|r| *r == text)
                 .map(|frame_type| frame_type as u32),
-            name: RegexBuilder::new(&text).case_insensitive(true).build().ok(),
+            name: (!text.is_empty())
+                .then(|| RegexBuilder::new(&text).case_insensitive(true).build().ok())
+                .flatten(),
             text,
             scratch: RefCell::default(),
         }
     }
 
     pub fn matches(&self, row: &ItemRow, tabs: &[ItemTab], excluded: &[u32]) -> bool {
+        if self.text.is_empty() {
+            return true;
+        }
         let priced = row.price > 0.0;
         let tab_names = row
             .tabs
@@ -250,7 +282,13 @@ impl Filter {
             if i > 0 {
                 haystack.push_str(", ");
             }
-            haystack.extend(part.chars().flat_map(char::to_lowercase));
+            if part.is_ascii() {
+                let start = haystack.len();
+                haystack.push_str(part);
+                haystack[start..].make_ascii_lowercase();
+            } else {
+                haystack.extend(part.chars().flat_map(char::to_lowercase));
+            }
         }
         haystack.contains(&self.text)
     }
@@ -541,8 +579,10 @@ pub fn ItemTable(state: State) -> impl IntoView {
     let hidden = Memo::new(move |_| state.settings.with(|s| hidden_columns(s).to_vec()));
     let columns = Memo::new(move |_| hidden.with(|h| visible_columns(h)));
     // The remembered widths, changed here while a column is dragged.
+    let saved_widths =
+        Memo::new(move |_| state.settings.with(|s| s.item_table_column_widths.clone()));
     let widths = RwSignal::new(BTreeMap::new());
-    Effect::new(move |_| widths.set(state.settings.with(|s| s.item_table_column_widths.clone())));
+    Effect::new(move |_| widths.set(saved_widths.get()));
     let in_group = Memo::new(move |_| state.items.with(|i| i.group_combined));
     // A Group's rows have no tabs to filter by.
     Effect::new(move |_| {
@@ -560,8 +600,7 @@ pub fn ItemTable(state: State) -> impl IntoView {
             visible
         }
     });
-    let rows = Memo::new(move |_| {
-        let sort = sort.get();
+    let filtered = Memo::new(move |_| {
         let filter = filter_text.with(|text| Filter::new(text));
         let comparison = comparison.get();
         let excluded = if tab_filter_open.get() && !comparison {
@@ -575,10 +614,16 @@ pub fn ItemTable(state: State) -> impl IntoView {
             } else {
                 &items.rows
             };
-            let mut rows = filter_rows(source, &items.tabs, &filter, &excluded);
-            sort_rows(&mut rows, &items.tabs, sort);
-            rows
+            filter_rows(source, &items.tabs, &filter, &excluded)
         })
+    });
+    let rows = Memo::new(move |_| {
+        let sort = sort.get();
+        let mut rows = filtered.get();
+        state.items.with_untracked(|items| {
+            sort_rows(&mut rows, &items.tabs, sort);
+        });
+        rows
     });
     let cumulative = Memo::new(move |_| rows.with(|r| cumulative_totals(r)));
     let count = move || rows.with(Vec::len);
@@ -588,9 +633,11 @@ pub fn ItemTable(state: State) -> impl IntoView {
     let moved = window_event_listener(ev::pointermove, move |ev| {
         if let Some((column, x, start)) = resizing.get_value() {
             let width = resized_width(column, start, f64::from(ev.client_x()) - x);
-            widths.update(|w| {
-                w.insert(column, width);
-            });
+            if widths.with_untracked(|w| w.get(&column).copied()) != Some(width) {
+                widths.update(|w| {
+                    w.insert(column, width);
+                });
+            }
         }
     });
     let released = window_event_listener(ev::pointerup, move |_| {

@@ -68,7 +68,11 @@ pub async fn write(pool: &SqlitePool, write: &Write<'_>) -> sqlx::Result<Importe
     }
     let mut added = Vec::new();
     for profile in &write.selection.profiles {
-        for snapshot in &profile.snapshots {
+        for snapshot in profile
+            .snapshots
+            .iter()
+            .take(snapshot::SNAPSHOTS_KEPT as usize)
+        {
             let inserted = sqlx::query(
                 "INSERT INTO snapshots \
                  (account_id, id, profile_id, created_at, total_value, body, imported) \
@@ -85,20 +89,21 @@ pub async fn write(pool: &SqlitePool, write: &Write<'_>) -> sqlx::Result<Importe
             if inserted == 0 {
                 continue;
             }
-            for (position, tab) in snapshot.tabs.iter().enumerate() {
-                sqlx::query(
+            for (chunk_idx, chunk) in snapshot.tabs.chunks(100).enumerate() {
+                let base = chunk_idx * 100;
+                let mut qb: sqlx::QueryBuilder<sqlx::Sqlite> = sqlx::QueryBuilder::new(
                     "INSERT INTO snapshot_tabs \
-                     (account_id, snapshot_id, position, tab_id, name, value) \
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                )
-                .bind(account_id)
-                .bind(&snapshot.id)
-                .bind(position as i64)
-                .bind(&tab.tab_id)
-                .bind(write.selection.tab_name(&tab.tab_id))
-                .bind(tab.value)
-                .execute(&mut *tx)
-                .await?;
+                     (account_id, snapshot_id, position, tab_id, name, value) ",
+                );
+                qb.push_values(chunk.iter().enumerate(), |mut b, (offset, tab)| {
+                    b.push_bind(account_id)
+                        .push_bind(&snapshot.id)
+                        .push_bind((base + offset) as i64)
+                        .push_bind(&tab.tab_id)
+                        .push_bind(write.selection.tab_name(&tab.tab_id))
+                        .push_bind(tab.value);
+                });
+                qb.build().execute(&mut *tx).await?;
             }
             added.push(snapshot.id.as_str());
         }

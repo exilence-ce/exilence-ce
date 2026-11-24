@@ -23,6 +23,15 @@ impl v1::ItemDefinition {
     /// xxh3-64 of [`Self::content_bytes`]: the id every definition is known
     /// by, whatever its `id` field holds.
     pub fn content_id(&self) -> u64 {
-        xxhash_rust::xxh3::xxh3_64(&self.content_bytes())
+        let bytes = prost::Message::encode_to_vec(self);
+        let content = if self.id != 0 { &bytes[9..] } else { &bytes };
+        xxhash_rust::xxh3::xxh3_64(content)
+    }
+
+    /// Both [`Self::content_bytes`] and [`Self::content_id`] from a single encode.
+    pub fn content_bytes_and_id(&self) -> (Vec<u8>, u64) {
+        let bytes = self.content_bytes();
+        let id = xxhash_rust::xxh3::xxh3_64(&bytes);
+        (bytes, id)
     }
 }

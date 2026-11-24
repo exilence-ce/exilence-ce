@@ -123,6 +123,7 @@ pub async fn ensure<R: Runtime>(
         .state::<Ninja>()
         .price_table(league, &mut overviews)
         .await;
+    let mut changed = false;
     let result = match fetched {
         // No prices (e.g. 404 everywhere): right for a league that never had
         // any, but a refresh must not swap a table for nothing.
@@ -140,7 +141,10 @@ pub async fn ensure<R: Runtime>(
             log::info!("loaded {} prices of {league}", entries.len());
             let table = match previous {
                 Some((held, _)) if *held == entries => held,
-                _ => Arc::new(entries),
+                _ => {
+                    changed = true;
+                    Arc::new(entries)
+                }
             };
             tables.leagues().insert(
                 league.to_owned(),
@@ -159,7 +163,7 @@ pub async fn ensure<R: Runtime>(
     };
     *tables.updating() = None;
     push(app).await;
-    if result.is_ok() {
+    if changed {
         items::push(app).await;
     }
     result

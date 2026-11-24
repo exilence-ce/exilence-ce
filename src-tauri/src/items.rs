@@ -272,7 +272,7 @@ pub async fn sweep(pool: &SqlitePool) -> Result<u64, Error> {
 
 /// `body` with the definitions it references.
 async fn with_definitions(pool: &SqlitePool, body: SnapshotBody) -> Result<Detail, Error> {
-    let ids: Vec<i64> = body
+    let ids: std::collections::HashSet<i64> = body
         .tabs
         .iter()
         .flat_map(|t| &t.definition_ids)
@@ -357,12 +357,15 @@ fn merged(detail: &Detail) -> Vec<MergedRow<'_>> {
 /// matches in `table`, the price table of `league`, if loaded (D3).
 struct Rows<'a> {
     table: Option<&'a PriceTable<'a>>,
-    league: &'a str,
+    url_prefix: String,
 }
 
 impl<'a> Rows<'a> {
     fn new(league: &'a str, table: Option<&'a PriceTable<'a>>) -> Self {
-        Self { table, league }
+        Self {
+            table,
+            url_prefix: ninja::details_url(league, ""),
+        }
     }
 
     fn row(
@@ -393,7 +396,7 @@ impl<'a> Rows<'a> {
             trend: entry.and_then(prices::trend),
             ninja_url: entry
                 .and_then(|e| e.details_page.as_deref())
-                .map(|page| ninja::details_url(self.league, page)),
+                .map(|page| format!("{}{page}", self.url_prefix)),
         }
     }
 

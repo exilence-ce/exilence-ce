@@ -263,9 +263,7 @@ async fn push<R: Runtime>(app: &AppHandle<R>) {
             log::error!("cannot push the group: {error}");
         }
     }
-    net_worth::push(app).await;
-    charts::push(app).await;
-    items::push(app).await;
+    tokio::join!(net_worth::push(app), charts::push(app), items::push(app),);
 }
 
 /// The stored Login's session token, after the superseded check (D25).
@@ -741,9 +739,17 @@ async fn apply<R: Runtime>(app: &AppHandle<R>, stream: u64, token: &str, event: 
                 .iter_mut()
                 .find(|m| m.account_id == removed.account_id)
             {
-                member
-                    .snapshots
-                    .retain(|s| !removed.snapshot_ids.contains(&s.id));
+                if removed.snapshot_ids.len() > 16 {
+                    let removed_ids: std::collections::HashSet<&str> =
+                        removed.snapshot_ids.iter().map(String::as_str).collect();
+                    member
+                        .snapshots
+                        .retain(|s| !removed_ids.contains(s.id.as_str()));
+                } else {
+                    member
+                        .snapshots
+                        .retain(|s| !removed.snapshot_ids.contains(&s.id));
+                }
             }
         }),
         // `Superseded` never gets here: [`read`] handles it.
@@ -906,23 +912,33 @@ async fn store_definitions(pool: &SqlitePool, definitions: &[ItemDefinition]) ->
     if definitions.is_empty() {
         return Ok(());
     }
+    let valid: Vec<(i64, Vec<u8>)> = definitions
+        .iter()
+        .filter_map(|definition| {
+            let (bytes, id) = definition.content_bytes_and_id();
+            if definition.id != id {
+                log::warn!(
+                    "ignored item definition {:016x}: not the hash of its content",
+                    definition.id
+                );
+                None
+            } else {
+                Some((definition.id as i64, bytes))
+            }
+        })
+        .collect();
+    if valid.is_empty() {
+        return Ok(());
+    }
     let mut tx = pool.begin().await?;
-    for definition in definitions {
-        if definition.id != definition.content_id() {
-            log::warn!(
-                "ignored item definition {:016x}: not the hash of its content",
-                definition.id
-            );
-            continue;
-        }
-        sqlx::query(
-            "INSERT INTO item_definitions (id, encoded, uploaded) VALUES (?1, ?2, 1) \
-             ON CONFLICT (id) DO UPDATE SET uploaded = 1",
-        )
-        .bind(definition.id as i64)
-        .bind(definition.content_bytes())
-        .execute(&mut *tx)
-        .await?;
+    for chunk in valid.chunks(500) {
+        let mut qb: sqlx::QueryBuilder<sqlx::Sqlite> =
+            sqlx::QueryBuilder::new("INSERT INTO item_definitions (id, encoded, uploaded) ");
+        qb.push_values(chunk, |mut b, (id, bytes)| {
+            b.push_bind(*id).push_bind(bytes).push_bind(1i64);
+        });
+        qb.push(" ON CONFLICT (id) DO UPDATE SET uploaded = 1");
+        qb.build().execute(&mut *tx).await?;
     }
     tx.commit().await
 }

@@ -6,7 +6,7 @@
 //! `domain` does not depend on `wire` (it pulls in tonic and tokio), so the
 //! app maps this to `wire::v1::ItemDefinition` and hashes it there.
 
-use crate::ggg::{Item, ItemMod, ItemProperty};
+use crate::ggg::{Item, ItemMod};
 
 /// Fields mirror `wire::v1::ItemDefinition` (minus `id`); identical items
 /// have equal definitions, so one row per definition merges them (F3).
@@ -60,8 +60,26 @@ impl ItemDefinition {
                 .frame_type_id
                 .as_deref()
                 .is_some_and(|id| id.eq_ignore_ascii_case("viscera"));
-        let tier = property(&item.properties, |name| name == "Map Tier")
-            .map_or(0, |text| text.trim().parse().unwrap_or(0));
+        let seed = item.frame_type == frame_type::CURRENCY && item.type_line.contains(" Seed");
+        let mut tier: Option<u32> = None;
+        let mut quality: Option<u32> = None;
+        let mut level: Option<u32> = None;
+        let mut seed_ilvl: Option<u32> = None;
+        for prop in &item.properties {
+            if tier.is_none() && prop.name == "Map Tier" {
+                tier = Some(
+                    prop.first_value()
+                        .map_or(0, |text| text.trim().parse().unwrap_or(0)),
+                );
+            } else if quality.is_none() && prop.name == "Quality" {
+                quality = Some(prop.first_value().map_or(0, parse_leading_int));
+            } else if level.is_none() && prop.name == "Level" {
+                level = Some(prop.first_value().map_or(0, parse_leading_int));
+            } else if seed && seed_ilvl.is_none() && prop.name.contains("Spawns a Level") {
+                seed_ilvl = Some(prop.first_value().map_or(0, parse_leading_int));
+            }
+        }
+        let tier = tier.unwrap_or(0);
         let name = if viscera {
             let raw = if item.name.is_empty() {
                 &item.type_line
@@ -76,9 +94,8 @@ impl ItemDefinition {
             // named it after its first implicit mod.
             item_name(&item.name, (!unique).then_some(item.type_line.as_str()))
         };
-        let seed = item.frame_type == frame_type::CURRENCY && item.type_line.contains(" Seed");
         let ilvl = if seed {
-            property_int(&item.properties, |name| name.contains("Spawns a Level"))
+            seed_ilvl.unwrap_or(0)
         } else {
             item.ilvl
         };
@@ -98,8 +115,8 @@ impl ItemDefinition {
             tier,
             links: links(item),
             sockets: item.sockets.len() as u32,
-            quality: property_int(&item.properties, |name| name == "Quality"),
-            level: property_int(&item.properties, |name| name == "Level"),
+            quality: quality.unwrap_or(0),
+            level: level.unwrap_or(0),
             variant,
             corrupted: item.corrupted,
             elder: item.elder || mentions(&item.implicit_mods, "Elder"),
@@ -182,53 +199,64 @@ fn strip_numeric_range(s: &str) -> Option<&str> {
     rest.strip_prefix(')')
 }
 
+const SET_MARKUP: &str = "<<set:MS>><<set:M>><<set:S>>";
+
 /// Legacy `getItemName`: the name, followed by the type line when given,
 /// without GGG's set markup.
 fn item_name(name: &str, type_line: Option<&str>) -> String {
-    let mut joined = name.to_owned();
-    if let Some(type_line) = type_line.filter(|t| !t.is_empty()) {
+    let type_line = type_line.filter(|t| !t.is_empty());
+    let mut joined = String::with_capacity(name.len() + type_line.map_or(0, |t| 1 + t.len()));
+    joined.push_str(name);
+    if let Some(type_line) = type_line {
         joined.push(' ');
         joined.push_str(type_line);
     }
-    joined
-        .replacen("<<set:MS>><<set:M>><<set:S>>", "", 1)
-        .trim()
-        .to_owned()
-}
-
-/// The first value of the first property `is` accepts.
-fn property(properties: &[ItemProperty], is: impl Fn(&str) -> bool) -> Option<&str> {
-    properties
-        .iter()
-        .find(|p| is(&p.name))
-        .and_then(ItemProperty::first_value)
+    if let Some(pos) = joined.find(SET_MARKUP) {
+        joined.replace_range(pos..pos + SET_MARKUP.len(), "");
+    }
+    let trimmed = joined.trim();
+    if trimmed.len() == joined.len() {
+        joined
+    } else {
+        trimmed.to_owned()
+    }
 }
 
 /// A property's leading integer as JavaScript's `parseInt` reads it
 /// (`+20%` is 20, `20 (Max)` is 20); 0 when absent or unreadable.
-fn property_int(properties: &[ItemProperty], is: impl Fn(&str) -> bool) -> u32 {
-    property(properties, is).map_or(0, |text| {
-        let text = text.trim_start();
-        let text = text.strip_prefix('+').unwrap_or(text);
-        let end = text
-            .find(|c: char| !c.is_ascii_digit())
-            .unwrap_or(text.len());
-        text[..end].parse().unwrap_or(0)
-    })
+fn parse_leading_int(text: &str) -> u32 {
+    let text = text.trim_start();
+    let text = text.strip_prefix('+').unwrap_or(text);
+    let end = text
+        .find(|c: char| !c.is_ascii_digit())
+        .unwrap_or(text.len());
+    text[..end].parse().unwrap_or(0)
 }
 
 /// The size of the largest linked socket group (legacy `getLinks`).
 fn links(item: &Item) -> u32 {
-    let mut counts: Vec<(u32, u32)> = Vec::new();
+    if item.sockets.is_empty() {
+        return 0;
+    }
+    let mut counts = [(0u32, 0u32); 6];
+    let mut len = 0usize;
+    let mut overflow: Vec<(u32, u32)> = Vec::new();
     for socket in &item.sockets {
-        match counts.iter_mut().find(|(group, _)| *group == socket.group) {
-            Some((_, count)) => *count += 1,
-            None => counts.push((socket.group, 1)),
+        if let Some((_, count)) = counts[..len].iter_mut().find(|(g, _)| *g == socket.group) {
+            *count += 1;
+        } else if len < counts.len() {
+            counts[len] = (socket.group, 1);
+            len += 1;
+        } else if let Some((_, count)) = overflow.iter_mut().find(|(g, _)| *g == socket.group) {
+            *count += 1;
+        } else {
+            overflow.push((socket.group, 1));
         }
     }
-    counts
-        .into_iter()
-        .map(|(_, count)| count)
+    counts[..len]
+        .iter()
+        .chain(overflow.iter())
+        .map(|&(_, count)| count)
         .max()
         .unwrap_or(0)
 }
@@ -236,6 +264,14 @@ fn links(item: &Item) -> u32 {
 fn mentions(mods: &[ItemMod], text: &str) -> bool {
     mods.iter().any(|m| m.description.contains(text))
 }
+
+const IMPRESENCE_DAMAGE: [(&str, &str); 5] = [
+    ("Lightning", "Lightning Damage"),
+    ("Fire", "Fire Damage"),
+    ("Cold", "Cold Damage"),
+    ("Physical", "Physical Damage"),
+    ("Chaos", "Chaos Damage"),
+];
 
 /// Legacy `getItemVariant`, fixed for D30 and D31. Legacy's abyssal-socket
 /// variants compare the name joined with the type line against a bare
@@ -255,9 +291,9 @@ fn variant(item: &Item) -> String {
             .to_owned();
     }
     // D31: an Impresence's variant is the damage type its explicit mods name.
-    if item_name(&item.name, None) == "Impresence" {
-        for damage in ["Lightning", "Fire", "Cold", "Physical", "Chaos"] {
-            if mentions(&item.explicit_mods, &format!("{damage} Damage")) {
+    if item.name.contains("Impresence") && item_name(&item.name, None) == "Impresence" {
+        for (damage, needle) in IMPRESENCE_DAMAGE {
+            if mentions(&item.explicit_mods, needle) {
                 return damage.to_owned();
             }
         }

@@ -113,32 +113,38 @@ pub struct CurrencyDetail {
 impl CurrencyOverview {
     /// Entries carry only name, icon and frame type 5 as fields.
     /// `overview_type` is the requested type, e.g. `Fragment`.
-    pub fn price_entries<'a>(
-        &'a self,
-        overview_type: &'a str,
-    ) -> impl Iterator<Item = PriceEntry> + 'a {
-        self.lines.iter().map(move |line| {
-            let icon = self
-                .currency_details
-                .iter()
-                .find(|d| d.name == line.currency_type_name)
-                .and_then(|d| d.icon.clone());
-            let count = line.receive.as_ref().map_or(0, |r| r.count);
+    pub fn price_entries(self, overview_type: &str) -> impl Iterator<Item = PriceEntry> {
+        let mut icons: HashMap<String, Option<String>> =
+            HashMap::with_capacity(self.currency_details.len());
+        for d in self.currency_details {
+            icons.entry(d.name).or_insert(d.icon);
+        }
+        let slug = type_slug(overview_type);
+        self.lines.into_iter().map(move |line| {
+            let icon = icons
+                .get(&line.currency_type_name)
+                .and_then(|i| i.as_deref())
+                .map(str::to_owned);
+            let (calculated, count) = match line.receive {
+                Some(r) => (r.value, r.count),
+                None => (0.0, 0),
+            };
+            let sparkline = if count > 10 {
+                line.receive_spark_line
+            } else {
+                line.low_confidence_receive_spark_line
+            };
             PriceEntry {
                 key: PriceKey {
-                    name: line.currency_type_name.clone(),
+                    name: line.currency_type_name,
                     icon: icon.unwrap_or_default(),
                     frame_type: Some(frame_type::CURRENCY),
                     ..PriceKey::default()
                 },
-                calculated: line.receive.as_ref().map_or(0.0, |r| r.value),
+                calculated,
                 count,
-                sparkline: if count > 10 {
-                    line.receive_spark_line.clone()
-                } else {
-                    line.low_confidence_receive_spark_line.clone()
-                },
-                details_page: details_page(overview_type, line.details_id.as_deref()),
+                sparkline,
+                details_page: details_page(&slug, line.details_id.as_deref()),
             }
         })
     }
@@ -172,23 +178,31 @@ pub struct ItemLine {
 
 impl ItemOverview {
     /// `overview_type` is the requested type, e.g. `UniqueArmour`.
-    pub fn price_entries<'a>(
-        &'a self,
-        overview_type: &'a str,
-    ) -> impl Iterator<Item = PriceEntry> + 'a {
-        self.lines.iter().map(move |line| {
-            let raw_variant = line.variant.as_deref().unwrap_or_default();
-            let variant = if overview_type == "Viscera" {
-                viscera_variant(raw_variant)
+    pub fn price_entries(self, overview_type: &str) -> impl Iterator<Item = PriceEntry> {
+        let is_viscera = overview_type == "Viscera";
+        let slug = type_slug(overview_type);
+        self.lines.into_iter().map(move |line| {
+            let variant = if is_viscera {
+                viscera_variant(line.variant.as_deref().unwrap_or_default())
             } else {
-                raw_variant.to_owned()
+                line.variant.unwrap_or_default()
             };
+            let elder = variant == "Elder";
+            let shaper = variant == "Shaper";
             let count = line.count.unwrap_or(0);
-            let sparkline = line.spark_line.as_ref().or(line.sparkline.as_ref());
+            let tier = line.map_tier.or_else(|| name_tier(&line.name)).unwrap_or(0);
+            let sparkline = if count > 10 {
+                line.spark_line.or(line.sparkline)
+            } else {
+                line.low_confidence_sparkline
+                    .or(line.spark_line)
+                    .or(line.sparkline)
+            };
+            let page = details_page(&slug, line.details_id.as_deref());
             PriceEntry {
                 key: PriceKey {
-                    name: line.name.clone(),
-                    icon: line.icon.clone().unwrap_or_default(),
+                    name: line.name,
+                    icon: line.icon.unwrap_or_default(),
                     frame_type: Some(line.item_class.unwrap_or(0)),
                     links: Some(line.links.unwrap_or(0)),
                     quality: Some(line.gem_quality.unwrap_or(0)),
@@ -196,21 +210,16 @@ impl ItemOverview {
                     ilvl: Some(line.level_required.unwrap_or(0)),
                     // poe.ninja no longer sends mapTier; the name carries it,
                     // e.g. "Map (Tier 16)".
-                    tier: Some(line.map_tier.or_else(|| name_tier(&line.name)).unwrap_or(0)),
+                    tier: Some(tier),
                     corrupted: Some(line.corrupted.unwrap_or(false)),
-                    elder: Some(variant == "Elder"),
-                    shaper: Some(variant == "Shaper"),
+                    elder: Some(elder),
+                    shaper: Some(shaper),
                     variant: Some(variant),
                 },
                 calculated: line.chaos_value.unwrap_or(0.0),
                 count,
-                sparkline: if count > 10 {
-                    sparkline
-                } else {
-                    line.low_confidence_sparkline.as_ref().or(sparkline)
-                }
-                .cloned(),
-                details_page: details_page(overview_type, line.details_id.as_deref()),
+                sparkline,
+                details_page: page,
             }
         })
     }
@@ -258,25 +267,22 @@ const DIVINATION_CARD_ICON: &str = "https://web.poecdn.com/gen/image/WzI1LDE0LHs
 
 impl ExchangeOverview {
     /// `overview_type` is the requested type, e.g. `DivinationCard`.
-    pub fn price_entries<'a>(
-        &'a self,
-        overview_type: &'a str,
-    ) -> impl Iterator<Item = PriceEntry> + 'a {
+    pub fn price_entries(self, overview_type: &str) -> impl Iterator<Item = PriceEntry> {
         // Later items with the same id win, as legacy's lookup object does.
-        let items: HashMap<&str, &ExchangeItem> = self
-            .items
-            .iter()
-            .flatten()
-            .map(|item| (item.id.as_str(), item))
-            .collect();
-        self.lines.iter().map(move |line| {
-            let item = items.get(line.id.as_str());
+        let mut items: HashMap<String, ExchangeItem> = HashMap::new();
+        for item in self.items.into_iter().flatten() {
+            items.insert(item.id.clone(), item);
+        }
+        let is_div_card = overview_type == "DivinationCard";
+        let slug = type_slug(overview_type);
+        self.lines.into_iter().map(move |line| {
+            let item = items.get(&line.id);
             let icon = match item.and_then(|i| i.image.as_deref()) {
                 Some(image) if !image.is_empty() && !image.starts_with("http") => {
                     format!("{POE_CDN}{image}")
                 }
                 Some(image) if !image.is_empty() => image.to_owned(),
-                _ if overview_type == "DivinationCard" => DIVINATION_CARD_ICON.to_owned(),
+                _ if is_div_card => DIVINATION_CARD_ICON.to_owned(),
                 _ => String::new(),
             };
             let calculated = line.primary_value.unwrap_or(0.0);
@@ -288,9 +294,20 @@ impl ExchangeOverview {
             } else {
                 0
             };
+            let page = details_page(
+                &slug,
+                Some(
+                    item.and_then(|i| i.details_id.as_deref())
+                        .unwrap_or(&line.id),
+                ),
+            );
+            let name = match item {
+                Some(i) => i.name.clone(),
+                None => line.id,
+            };
             PriceEntry {
                 key: PriceKey {
-                    name: item.map_or_else(|| line.id.clone(), |i| i.name.clone()),
+                    name,
                     icon,
                     frame_type: Some(frame_type::CURRENCY),
                     variant: Some(String::new()),
@@ -305,14 +322,8 @@ impl ExchangeOverview {
                 },
                 calculated,
                 count,
-                sparkline: line.sparkline.clone(),
-                details_page: details_page(
-                    overview_type,
-                    Some(
-                        item.and_then(|i| i.details_id.as_deref())
-                            .unwrap_or(&line.id),
-                    ),
-                ),
+                sparkline: line.sparkline,
+                details_page: page,
             }
         })
     }
@@ -323,8 +334,8 @@ pub const PAGES_URL: &str = "https://poe.ninja";
 
 /// A price entry's page below the league: `<type slug>/<details id>`;
 /// `None` without a details id.
-fn details_page(overview_type: &str, details_id: Option<&str>) -> Option<String> {
-    details_id.map(|id| format!("{}/{id}", type_slug(overview_type)))
+fn details_page(slug: &str, details_id: Option<&str>) -> Option<String> {
+    details_id.map(|id| format!("{slug}/{id}"))
 }
 
 /// The poe.ninja page of a price entry of `price_league` (legacy
@@ -376,33 +387,47 @@ fn type_slug(overview_type: &str) -> String {
 /// keeping the position of the first and the one backed by the most
 /// listings. Absent fields count as 0, empty or false.
 pub fn dedupe(entries: impl IntoIterator<Item = PriceEntry>) -> Vec<PriceEntry> {
-    type DedupeKey = (String, u32, u32, u32, u32, bool, String, u32, u32);
-    let mut index: HashMap<DedupeKey, usize> = HashMap::new();
-    let mut deduped: Vec<PriceEntry> = Vec::new();
-    for entry in entries {
-        let k = &entry.key;
-        let key = (
-            k.name.clone(),
-            k.frame_type.unwrap_or(0),
-            k.quality.unwrap_or(0),
-            k.links.unwrap_or(0),
-            k.level.unwrap_or(0),
-            k.corrupted.unwrap_or(false),
-            k.variant.clone().unwrap_or_default(),
-            k.tier.unwrap_or(0),
-            k.ilvl.unwrap_or(0),
-        );
-        match index.get(&key) {
-            Some(&i) => {
-                if entry.count > deduped[i].count {
-                    deduped[i] = entry;
+    type DedupeKey<'a> = (&'a str, u32, u32, u32, u32, bool, &'a str, u32, u32);
+    let mut entries: Vec<Option<PriceEntry>> = entries.into_iter().map(Some).collect();
+    let winners = {
+        let mut index: HashMap<DedupeKey<'_>, usize> = HashMap::with_capacity(entries.len());
+        let mut winners: Vec<usize> = Vec::with_capacity(entries.len());
+        for (i, slot) in entries.iter().enumerate() {
+            let Some(entry) = slot.as_ref() else {
+                continue;
+            };
+            let k = &entry.key;
+            let key: DedupeKey<'_> = (
+                k.name.as_str(),
+                k.frame_type.unwrap_or(0),
+                k.quality.unwrap_or(0),
+                k.links.unwrap_or(0),
+                k.level.unwrap_or(0),
+                k.corrupted.unwrap_or(false),
+                k.variant.as_deref().unwrap_or(""),
+                k.tier.unwrap_or(0),
+                k.ilvl.unwrap_or(0),
+            );
+            match index.get(&key) {
+                Some(&slot_idx) => {
+                    let prev_idx = winners[slot_idx];
+                    if entries[prev_idx]
+                        .as_ref()
+                        .is_some_and(|prev| entry.count > prev.count)
+                    {
+                        winners[slot_idx] = i;
+                    }
+                }
+                None => {
+                    index.insert(key, winners.len());
+                    winners.push(i);
                 }
             }
-            None => {
-                index.insert(key, deduped.len());
-                deduped.push(entry);
-            }
         }
-    }
-    deduped
+        winners
+    };
+    winners
+        .into_iter()
+        .filter_map(|i| entries[i].take())
+        .collect()
 }

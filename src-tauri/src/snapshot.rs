@@ -27,7 +27,7 @@ use ipc::slices::{
     Status,
 };
 use ipc::{IpcError, Message, MessageKey};
-use sqlx::{AssertSqlSafe, SqlitePool};
+use sqlx::SqlitePool;
 use tauri::{AppHandle, Manager, Runtime};
 use tokio::sync::{oneshot, watch};
 use wire::v1::{SnapshotBody, SnapshotTab, TabKind, TabValue, UploadSnapshotRequest};
@@ -563,26 +563,35 @@ async fn commit<R: Runtime>(
     .bind(&snapshot.body)
     .execute(&mut *tx)
     .await?;
-    for (position, (value, name)) in snapshot.tab_values.iter().zip(&taken.tab_names).enumerate() {
-        sqlx::query(
-            "INSERT INTO snapshot_tabs (account_id, snapshot_id, position, tab_id, name, value) \
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        )
-        .bind(&account_id)
-        .bind(&snapshot.id)
-        .bind(position as i64)
-        .bind(&value.tab_id)
-        .bind(name)
-        .bind(value.value)
-        .execute(&mut *tx)
-        .await?;
+    let tab_rows: Vec<_> = snapshot
+        .tab_values
+        .iter()
+        .zip(&taken.tab_names)
+        .enumerate()
+        .collect();
+    for chunk in tab_rows.chunks(100) {
+        let mut qb: sqlx::QueryBuilder<sqlx::Sqlite> = sqlx::QueryBuilder::new(
+            "INSERT INTO snapshot_tabs (account_id, snapshot_id, position, tab_id, name, value) ",
+        );
+        qb.push_values(chunk, |mut b, &(position, (value, name))| {
+            b.push_bind(&account_id)
+                .push_bind(&snapshot.id)
+                .push_bind(position as i64)
+                .push_bind(&value.tab_id)
+                .push_bind(name)
+                .push_bind(value.value);
+        });
+        qb.build().execute(&mut *tx).await?;
     }
-    for definition in &taken.definitions {
-        sqlx::query("INSERT INTO item_definitions (id, encoded) VALUES (?1, ?2) ON CONFLICT (id) DO NOTHING")
-            .bind(definition.id as i64)
-            .bind(definition.content_bytes())
-            .execute(&mut *tx)
-            .await?;
+    for chunk in taken.definitions.chunks(500) {
+        let mut qb: sqlx::QueryBuilder<sqlx::Sqlite> =
+            sqlx::QueryBuilder::new("INSERT INTO item_definitions (id, encoded) ");
+        qb.push_values(chunk, |mut b, definition| {
+            b.push_bind(definition.id as i64)
+                .push_bind(definition.content_bytes());
+        });
+        qb.push(" ON CONFLICT (id) DO NOTHING");
+        qb.build().execute(&mut *tx).await?;
     }
     retain(&mut tx, &account_id, &profile.id).await?;
     let ids = db::json_text(
@@ -610,24 +619,29 @@ pub async fn retain(
     account_id: &str,
     profile_id: &str,
 ) -> sqlx::Result<()> {
-    const RANKED: &str = "WITH ranked AS ( \
-         SELECT id, row_number() OVER (ORDER BY created_at DESC, id DESC) AS rn \
-         FROM snapshots WHERE account_id = ?1 AND profile_id = ?2) ";
-    // Built from constants only; every value is bound.
-    sqlx::query(AssertSqlSafe(format!(
-        "{RANKED}UPDATE snapshots SET body = NULL \
+    sqlx::query(
+        "UPDATE snapshots SET body = NULL \
          WHERE account_id = ?1 AND body IS NOT NULL \
-         AND id IN (SELECT id FROM ranked WHERE rn > ?3)"
-    )))
+         AND id IN ( \
+             SELECT id FROM snapshots \
+             WHERE account_id = ?1 AND profile_id = ?2 \
+             ORDER BY created_at DESC, id DESC LIMIT -1 OFFSET ?3 \
+         )",
+    )
     .bind(account_id)
     .bind(profile_id)
     .bind(BODIES_KEPT)
     .execute(&mut *tx)
     .await?;
-    let removed = sqlx::query(AssertSqlSafe(format!(
-        "{RANKED}DELETE FROM snapshots \
-         WHERE account_id = ?1 AND id IN (SELECT id FROM ranked WHERE rn > ?3)"
-    )))
+    let removed = sqlx::query(
+        "DELETE FROM snapshots \
+         WHERE account_id = ?1 \
+         AND id IN ( \
+             SELECT id FROM snapshots \
+             WHERE account_id = ?1 AND profile_id = ?2 \
+             ORDER BY created_at DESC, id DESC LIMIT -1 OFFSET ?3 \
+         )",
+    )
     .bind(account_id)
     .bind(profile_id)
     .bind(SNAPSHOTS_KEPT)
@@ -660,6 +674,7 @@ async fn upload<R: Runtime>(app: &AppHandle<R>, taken: Taken, new_ids: Vec<u64>)
     let Some(session_token) = session_token else {
         return log::info!("UploadSnapshot of {id} skipped: signed out");
     };
+    let new_ids: std::collections::HashSet<u64> = new_ids.into_iter().collect();
     let new_definitions: Vec<_> = taken
         .definitions
         .into_iter()

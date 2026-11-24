@@ -107,20 +107,29 @@ async fn combined(
     {
         // What the combination reads: the newest of the sparkline, the one
         // before them and the last hour's.
-        let rows: Vec<(i64, f64)> = sqlx::query_as(
-            "SELECT created_at, total_value FROM ( \
-                 SELECT created_at, total_value, id, \
-                        row_number() OVER (ORDER BY created_at DESC, id DESC) AS rn \
-                 FROM snapshots WHERE account_id = ?1 AND profile_id = ?2) \
-             WHERE rn <= ?3 OR created_at > ?4 \
-             ORDER BY created_at DESC, id DESC",
+        let mut rows: Vec<(i64, f64)> = sqlx::query_as(
+            "SELECT created_at, total_value FROM snapshots \
+             WHERE account_id = ?1 AND profile_id = ?2 \
+             ORDER BY created_at DESC, id DESC LIMIT ?3",
         )
         .bind(account_id)
         .bind(profile_id)
         .bind(SPARKLINE_SNAPSHOTS as i64 + 1)
-        .bind(now - INCOME_WINDOW_MS)
         .fetch_all(pool)
         .await?;
+        let start = now - INCOME_WINDOW_MS;
+        if rows.len() > SPARKLINE_SNAPSHOTS && rows.last().is_some_and(|&(at, _)| at > start) {
+            rows = sqlx::query_as(
+                "SELECT created_at, total_value FROM snapshots \
+                 WHERE account_id = ?1 AND profile_id = ?2 AND created_at > ?3 \
+                 ORDER BY created_at DESC, id DESC",
+            )
+            .bind(account_id)
+            .bind(profile_id)
+            .bind(start)
+            .fetch_all(pool)
+            .await?;
+        }
         let newest_first: Vec<SnapshotTotal> = rows
             .into_iter()
             .map(|(created_at, total)| SnapshotTotal { created_at, total })

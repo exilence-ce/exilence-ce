@@ -51,23 +51,29 @@ pub fn combine(players: &[PlayerTotals<'_>], now: i64) -> Combined {
         })
         .collect();
     snapshots.sort_by_key(|&(created_at, player, _)| (created_at, player));
+    let first_in_range = start.map_or(snapshots.len(), |s| {
+        snapshots.partition_point(|&(created_at, _, _)| created_at < s)
+    });
+    let emit_from = snapshots
+        .len()
+        .saturating_sub(SPARKLINE_SNAPSHOTS)
+        .max(first_in_range);
     let mut latest = vec![0.0; players.len()];
-    let mut series = Vec::new();
-    for (created_at, player, total) in snapshots {
+    let mut sparkline = Vec::with_capacity(snapshots.len().saturating_sub(emit_from));
+    for (i, (_, player, total)) in snapshots.into_iter().enumerate() {
         latest[player] = total;
-        if Some(created_at) >= start {
-            series.push(latest.iter().sum::<f64>());
+        if i >= emit_from {
+            sparkline.push(latest.iter().sum::<f64>());
         }
     }
-    let change = match series.as_slice() {
+    let change = match sparkline.as_slice() {
         [.., previous, newest] => newest - previous,
         _ => 0.0,
     };
-    let sparkline_from = series.len().saturating_sub(SPARKLINE_SNAPSHOTS);
     Combined {
-        total: series.last().copied().unwrap_or(0.0),
+        total: sparkline.last().copied().unwrap_or(0.0),
         change,
-        sparkline: series[sparkline_from..].to_vec(),
+        sparkline,
         income: players
             .iter()
             .map(|p| net_worth::income(p.newest_first, now, i64::MIN))
