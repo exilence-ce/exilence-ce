@@ -14,6 +14,7 @@ Desktop client of Exilence CE: tracks the net worth of your Path of Exile stash,
 - [Supporting us](#supporting-us)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
+- [Contributing](CONTRIBUTING.md)
 - [Releasing](#releasing)
 - [poe.ninja drift check](#poeninja-drift-check)
 
