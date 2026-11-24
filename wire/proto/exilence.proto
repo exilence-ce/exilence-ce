@@ -3,8 +3,8 @@
 // Decided in "What are the client↔backend gRPC services and messages?"
 // (https://github.com/exilence-ce/migration/issues/17). Transport, stream
 // lifetime and evolution rules: docs/adr/0004-grpc-with-group-only-stream.md.
-// The shared crate in exilence-ce-ng copies this file verbatim and compiles it
-// with tonic-prost-build + protox.
+// The client's `wire` crate (exilence-ce/exilence-ce) copies this file
+// verbatim and compiles it with tonic-prost-build + protox.
 //
 // Conventions
 //
