@@ -81,6 +81,7 @@ pub fn open_overlay<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         .inner_size(width, height)
         .min_inner_size(width, height)
         .decorations(false)
+        .background_color(tauri::window::Color(0x10, 0x10, 0x10, 0xff))
         .always_on_top(true)
         .skip_taskbar(true);
     let StartupHardwareAcceleration(hardware_acceleration) =
