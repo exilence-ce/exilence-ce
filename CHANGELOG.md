@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.0-beta.4
+
+- No more white flash when the app or the net worth overlay opens: both windows start in the app's dark background.
+- Faster with large stashes and long Snapshot histories: the Comparison and Group Comparison tables, pricing and saving a Snapshot, the charts, the price-table search under **Settings → Custom prices** and the CSV export. Thanks to KnoT for the work behind this.
+
 ## 2.0.0-beta.3
 
 - Prices for the Path of Exile 3.30 (Covens) items from poe.ninja: Thread, Ducats, Enshrouding Crystals, Viscera, Corpses and Wombgifts. Viscera with different implicit variants and Wombgifts of different item levels stay separate rows.
