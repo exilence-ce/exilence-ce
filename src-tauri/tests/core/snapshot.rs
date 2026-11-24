@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use exilence_ce_ng_lib::prices::PriceTables;
 use exilence_ce_ng_lib::slot::{self, OperationSlot};
-use exilence_ce_ng_lib::snapshot::{BODIES_KEPT, SNAPSHOTS_KEPT};
+use exilence_ce_ng_lib::snapshot::{self as snapshot_store, BODIES_KEPT, SNAPSHOTS_KEPT};
 use exilence_ce_ng_lib::stash_tabs::StashTabs;
 use exilence_ce_ng_lib::state::Store;
 use exilence_ce_ng_lib::{profiles, session_start};
@@ -593,6 +593,32 @@ pub(super) fn insert_snapshot(setup: &Setup, id: &str, created_at: i64, total: f
         .execute(&setup.harness.pool()),
     )
     .unwrap();
+}
+
+#[test]
+fn f10_snapshot_tabs_keep_their_positions_past_one_insert() {
+    let setup = Setup::ready(None, ggg_with_stash(Duration::ZERO));
+    insert_snapshot(&setup, "many-tabs", START, 0.0);
+    let ids: Vec<String> = (0..250).map(|i| format!("tab-{i}")).collect();
+    let tabs: Vec<(&str, &str, f64)> = ids.iter().map(|id| (id.as_str(), "Tab", 1.0)).collect();
+    let pool = setup.harness.pool();
+    block_on(async {
+        let mut tx = pool.begin().await.unwrap();
+        snapshot_store::insert_tabs(&mut tx, ACCOUNT_ID, "many-tabs", &tabs)
+            .await
+            .unwrap();
+        tx.commit().await.unwrap();
+    });
+    let stored: Vec<(i64, String)> = block_on(
+        sqlx::query_as(
+            "SELECT position, tab_id FROM snapshot_tabs \
+             WHERE snapshot_id = 'many-tabs' ORDER BY position",
+        )
+        .fetch_all(&pool),
+    )
+    .unwrap();
+    let expected: Vec<(i64, String)> = (0..250).map(|i| (i, format!("tab-{i}"))).collect();
+    assert_eq!(stored, expected);
 }
 
 #[test]

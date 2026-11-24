@@ -5,6 +5,7 @@
 //! tooltip and legend are UI state only.
 
 use std::collections::HashSet;
+use std::fmt::Write as _;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use ipc::MessageKey;
@@ -55,8 +56,10 @@ pub fn ChartSections(state: State) -> impl IntoView {
         });
         (state.charts.with(|c| c.time_span), players)
     });
-    let net_worth_open = Signal::derive(move || state.settings.with(|s| s.net_worth_chart_open));
-    let tab_open = Signal::derive(move || state.settings.with(|s| s.tab_chart_open));
+    let net_worth_open = Memo::new(move |_| state.settings.with(|s| s.net_worth_chart_open));
+    let tab_open = Memo::new(move |_| state.settings.with(|s| s.tab_chart_open));
+    let net_worth_series = Memo::new(move |_| state.charts.with(|c| c.net_worth.clone()));
+    let tab_series = Memo::new(move |_| state.charts.with(|c| c.tabs.clone()));
     let toggle_net_worth = move || {
         save(SettingsPatch {
             net_worth_chart_open: Some(!net_worth_open.get_untracked()),
@@ -75,11 +78,11 @@ pub fn ChartSections(state: State) -> impl IntoView {
                 class="net-worth-chart"
                 title=MessageKey::ChartNetWorth
                 icon=icon::SHOW_CHART
-                open=net_worth_open
+                open=net_worth_open.into()
                 toggle=toggle_net_worth
             >
                 <Chart
-                    series=Signal::derive(move || state.charts.with(|c| c.net_worth.clone()))
+                    series=net_worth_series.into()
                     area=true
                     width=700.0
                     height=200.0
@@ -91,11 +94,11 @@ pub fn ChartSections(state: State) -> impl IntoView {
                 class="tab-chart"
                 title=MessageKey::ChartTabs
                 icon=icon::STACKED_LINE_CHART
-                open=tab_open
+                open=tab_open.into()
                 toggle=toggle_tabs
             >
                 <Chart
-                    series=Signal::derive(move || state.charts.with(|c| c.tabs.clone()))
+                    series=tab_series.into()
                     area=false
                     width=500.0
                     height=222.0
@@ -327,15 +330,16 @@ fn Chart(
                             .map(|&(x, y)| view! { <circle cx=x cy=y r="2" fill=color /> })
                             .collect_view()
                     });
+                    let line = line_path(&points);
                     let fill = area.then(|| {
                         view! {
-                            <path d=area_path(&points, frame.bottom()) fill=gradient_fill.clone() />
+                            <path d=area_path(&line, &points, frame.bottom()) fill=gradient_fill.clone() />
                         }
                     });
                     view! {
                         {fill}
                         <path
-                            d=line_path(&points)
+                            d=line
                             fill="none"
                             stroke=color
                             stroke-width=if area { "2" } else { "1" }
@@ -347,14 +351,19 @@ fn Chart(
         }))
     };
 
-    let tooltip = move || {
+    let hovered = Memo::new(move |_| {
         if drag.get().is_some() {
             return None;
         }
         let (x, y) = pointer.get()?;
         let scale = scale.get()?;
         let shown = shown.get();
-        let (si, pi) = series.with(|s| nearest_point(s, &shown, &scale, x, y))?;
+        series.with(|s| nearest_point(s, &shown, &scale, x, y))
+    });
+
+    let tooltip = move || {
+        let (si, pi) = hovered.get()?;
+        let scale = scale.get()?;
         let (name, point) = series.with(|s| (s[si].name.clone(), s[si].points[pi]));
         let color = PALETTE[si % PALETTE.len()];
         let (px, py) = (scale.x(point.at), scale.y(point.value));
@@ -865,20 +874,20 @@ fn nearest_point(
 fn line_path(points: &[(f64, f64)]) -> String {
     let mut d = String::with_capacity(points.len() * 16);
     for (i, (x, y)) in points.iter().enumerate() {
-        d.push_str(if i == 0 { "M" } else { "L" });
-        d.push_str(&format!("{x:.1},{y:.1}"));
+        let cmd = if i == 0 { 'M' } else { 'L' };
+        let _ = write!(d, "{cmd}{x:.1},{y:.1}");
     }
     d
 }
 
-/// The area under `points` down to `bottom`.
-fn area_path(points: &[(f64, f64)], bottom: f64) -> String {
+/// The area under `points` down to `bottom`, extending an existing `line` path.
+fn area_path(line: &str, points: &[(f64, f64)], bottom: f64) -> String {
     match (points.first(), points.last()) {
         (Some(&(first, _)), Some(&(last, _))) => {
-            format!(
-                "{}L{last:.1},{bottom:.1}L{first:.1},{bottom:.1}Z",
-                line_path(points)
-            )
+            let mut d = String::with_capacity(line.len() + 32);
+            d.push_str(line);
+            let _ = write!(d, "L{last:.1},{bottom:.1}L{first:.1},{bottom:.1}Z");
+            d
         }
         _ => String::new(),
     }
@@ -888,34 +897,38 @@ fn area_path(points: &[(f64, f64)], bottom: f64) -> String {
 /// `points`: a B-spline from the first point to the last; two points run
 /// straight.
 fn basis_path(points: &[(f64, f64)]) -> String {
-    let at = |(x, y): (f64, f64)| format!("{x:.1},{y:.1}");
-    let bezier = |a: (f64, f64), b: (f64, f64), c: (f64, f64)| {
-        format!(
-            "C{} {} {}",
-            at(((2.0 * a.0 + b.0) / 3.0, (2.0 * a.1 + b.1) / 3.0)),
-            at(((a.0 + 2.0 * b.0) / 3.0, (a.1 + 2.0 * b.1) / 3.0)),
-            at(((a.0 + 4.0 * b.0 + c.0) / 6.0, (a.1 + 4.0 * b.1 + c.1) / 6.0)),
-        )
+    let write_bezier = |d: &mut String, a: (f64, f64), b: (f64, f64), c: (f64, f64)| {
+        let _ = write!(
+            d,
+            "C{:.1},{:.1} {:.1},{:.1} {:.1},{:.1}",
+            (2.0 * a.0 + b.0) / 3.0,
+            (2.0 * a.1 + b.1) / 3.0,
+            (a.0 + 2.0 * b.0) / 3.0,
+            (a.1 + 2.0 * b.1) / 3.0,
+            (a.0 + 4.0 * b.0 + c.0) / 6.0,
+            (a.1 + 4.0 * b.1 + c.1) / 6.0,
+        );
     };
     match points {
         [] => String::new(),
-        [only] => format!("M{}", at(*only)),
-        [first, last] => format!("M{}L{}", at(*first), at(*last)),
+        [only] => format!("M{:.1},{:.1}", only.0, only.1),
+        [first, last] => format!("M{:.1},{:.1}L{:.1},{:.1}", first.0, first.1, last.0, last.1),
         [first, second, ..] => {
-            let mut d = format!(
-                "M{}L{}",
-                at(*first),
-                at((
-                    (5.0 * first.0 + second.0) / 6.0,
-                    (5.0 * first.1 + second.1) / 6.0
-                ))
+            let mut d = String::with_capacity(points.len() * 40);
+            let _ = write!(
+                d,
+                "M{:.1},{:.1}L{:.1},{:.1}",
+                first.0,
+                first.1,
+                (5.0 * first.0 + second.0) / 6.0,
+                (5.0 * first.1 + second.1) / 6.0,
             );
             for w in points.windows(3) {
-                d.push_str(&bezier(w[0], w[1], w[2]));
+                write_bezier(&mut d, w[0], w[1], w[2]);
             }
             let (before, last) = (points[points.len() - 2], points[points.len() - 1]);
-            d.push_str(&bezier(before, last, last));
-            d.push_str(&format!("L{}", at(last)));
+            write_bezier(&mut d, before, last, last);
+            let _ = write!(d, "L{:.1},{:.1}", last.0, last.1);
             d
         }
     }

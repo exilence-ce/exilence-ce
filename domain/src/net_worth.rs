@@ -44,10 +44,11 @@ pub fn income_window_start(now: i64, reset_at: i64) -> i64 {
 /// the difference is not scaled to the window's length.
 pub fn income(newest_first: &[SnapshotTotal], now: i64, reset_at: i64) -> f64 {
     let start = income_window_start(now, reset_at);
-    let mut in_window = newest_first.iter().filter(|s| s.created_at > start);
-    match (in_window.next(), in_window.next_back()) {
-        (Some(newest), Some(oldest)) => newest.total - oldest.total,
-        _ => 0.0,
+    let count = newest_first.partition_point(|s| s.created_at > start);
+    if count >= 2 {
+        newest_first[0].total - newest_first[count - 1].total
+    } else {
+        0.0
     }
 }
 

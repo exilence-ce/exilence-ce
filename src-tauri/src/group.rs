@@ -33,7 +33,7 @@ use wire::v1::{
 };
 
 use crate::backend::{self, Backend};
-use crate::snapshot::BODIES_KEPT;
+use crate::snapshot::{self, BODIES_KEPT};
 use crate::state::{self, Pushing, Store};
 use crate::{
     auth, charts, db, group_connection, group_upload_queue, internal, items, logging, net_worth,
@@ -903,27 +903,25 @@ fn decode(body: &[u8]) -> Result<SnapshotBody, String> {
 /// Stores definitions that came from the backend, each after checking its
 /// id is the hash of its content; the backend has them (`uploaded`).
 async fn store_definitions(pool: &SqlitePool, definitions: &[ItemDefinition]) -> sqlx::Result<()> {
-    if definitions.is_empty() {
+    let valid: Vec<(i64, Vec<u8>)> = definitions
+        .iter()
+        .filter_map(|definition| {
+            let (bytes, id) = definition.content_bytes_and_id();
+            if definition.id != id {
+                log::warn!(
+                    "ignored item definition {:016x}: not the hash of its content",
+                    definition.id
+                );
+                return None;
+            }
+            Some((definition.id as i64, bytes))
+        })
+        .collect();
+    if valid.is_empty() {
         return Ok(());
     }
     let mut tx = pool.begin().await?;
-    for definition in definitions {
-        if definition.id != definition.content_id() {
-            log::warn!(
-                "ignored item definition {:016x}: not the hash of its content",
-                definition.id
-            );
-            continue;
-        }
-        sqlx::query(
-            "INSERT INTO item_definitions (id, encoded, uploaded) VALUES (?1, ?2, 1) \
-             ON CONFLICT (id) DO UPDATE SET uploaded = 1",
-        )
-        .bind(definition.id as i64)
-        .bind(definition.content_bytes())
-        .execute(&mut *tx)
-        .await?;
-    }
+    snapshot::insert_definitions(&mut tx, &valid, true).await?;
     tx.commit().await
 }
 

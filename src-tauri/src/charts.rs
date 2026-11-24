@@ -22,12 +22,17 @@ pub async fn load(
     time_span: TimeSpan,
     now: i64,
 ) -> sqlx::Result<Charts> {
+    // Only the span's Snapshots; all of them for all time.
+    let since = domain_span(time_span)
+        .millis()
+        .map_or(i64::MIN, |length| now - length);
     let totals: Vec<(i64, f64)> = sqlx::query_as(
         "SELECT created_at, total_value FROM snapshots \
-         WHERE account_id = ?1 AND profile_id = ?2",
+         WHERE account_id = ?1 AND profile_id = ?2 AND created_at > ?3",
     )
     .bind(account_id)
     .bind(&profile.id)
+    .bind(since)
     .fetch_all(pool)
     .await?;
     let totals: Vec<DomainPoint> = totals

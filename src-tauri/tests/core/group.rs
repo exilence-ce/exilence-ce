@@ -445,6 +445,37 @@ fn f13_relayed_members_and_snapshots_update_the_combined_net_worth_by_selection(
 }
 
 #[test]
+fn d15_combined_income_counts_every_snapshot_of_the_last_hour() {
+    let backend = FakeBackend::start(signed_in());
+    let harness = signed_in_harness(&backend);
+    // 40 more in the last hour, older ones worth less: more than the
+    // sparkline reads, so the income needs the Snapshots past it.
+    for i in 1..=40 {
+        block_on(
+            sqlx::query(
+                "INSERT INTO snapshots (account_id, id, profile_id, created_at, total_value) \
+                 VALUES (?1, ?2, ?3, ?4, ?5)",
+            )
+            .bind(ACCOUNT_ID)
+            .bind(format!("own-older-{i}"))
+            .bind(default_profile().id)
+            .bind(START - (10 + i) * MINUTE)
+            .bind(100.0 - i as f64)
+            .execute(&harness.pool()),
+        )
+        .unwrap();
+    }
+    backend.script_group_syncs([Ok(group_sync("Rich Exiles123", vec![bar(Vec::new())]))]);
+    harness
+        .invoke::<CreateGroup>(&CreateGroupArgs {
+            group: form("Rich Exiles123", ""),
+        })
+        .unwrap();
+    // Own: 100c 10 minutes ago minus 60c 50 minutes ago; Bar has one Snapshot.
+    assert_eq!(net_worth(&harness).income, 40.0);
+}
+
+#[test]
 fn f13_definitions_are_fetched_at_most_10000_per_call() {
     let backend = FakeBackend::start(signed_in());
     let harness = signed_in_harness(&backend);

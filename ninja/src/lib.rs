@@ -10,6 +10,7 @@
 pub mod http;
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use domain::pricing::PriceEntry;
 use domain::pricing::ninja::{
@@ -59,7 +60,7 @@ struct League {
 #[derive(Clone, Debug)]
 struct Cached {
     etag: String,
-    entries: Vec<PriceEntry>,
+    entries: Arc<[PriceEntry]>,
 }
 
 /// The overview answers behind a price league's table, by request URL: a
@@ -164,7 +165,7 @@ impl Ninja {
                     match etag {
                         Some(etag) => Some(Cached {
                             etag,
-                            entries: mapped,
+                            entries: Arc::from(mapped),
                         }),
                         None => {
                             entries.extend(mapped);

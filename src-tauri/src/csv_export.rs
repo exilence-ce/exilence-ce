@@ -4,6 +4,7 @@
 //! `Data from YYYY-MM-DD HH:mm`, a header line of legacy's item keys and
 //! one comma-separated line per row, saved where the user chooses.
 
+use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::sync::Arc;
 
@@ -45,9 +46,11 @@ const HEADERS: [&str; 14] = [
 pub async fn export<R: Runtime>(app: &AppHandle<R>, row_keys: &[String]) -> Result<(), IpcError> {
     let at = local(app.state::<Scheduler>().now());
     let text = app.state::<Store>().read(|items: &Items| {
+        let by_key: HashMap<&str, &ItemRow> =
+            items.rows.iter().map(|r| (r.key.as_str(), r)).collect();
         let rows: Vec<&ItemRow> = row_keys
             .iter()
-            .filter_map(|key| items.rows.iter().find(|r| &r.key == key))
+            .filter_map(|key| by_key.get(key.as_str()).copied())
             .collect();
         csv(&rows, &items.tabs, at)
     });
@@ -101,34 +104,45 @@ pub fn csv(rows: &[&ItemRow], tabs: &[ItemTab], at: DateTime<Local>) -> String {
         HEADERS.join(",")
     );
     for row in rows {
-        let fields = [
-            quoted(&row.name),
-            row.frame_type.to_string(),
-            row.ilvl.to_string(),
-            row.tier.to_string(),
+        write_quoted(&mut text, &row.name);
+        let _ = write!(
+            text,
+            ",{},{},{},{},{},{},{},{},{},{},",
+            row.frame_type,
+            row.ilvl,
+            row.tier,
             boolean(row.corrupted),
-            row.links.to_string(),
-            row.quality.to_string(),
-            row.level.to_string(),
-            row.quantity.to_string(),
-            row.price.to_string(),
-            row.total.to_string(),
-            quoted(&row.tab_names(tabs)),
-            quoted(&row.icon),
-            quoted(row.ninja_url.as_deref().unwrap_or_default()),
-        ];
-        let _ = write!(text, "{}{EOL}", fields.join(","));
+            row.links,
+            row.quality,
+            row.level,
+            row.quantity,
+            row.price,
+            row.total,
+        );
+        write_quoted(&mut text, &row.tab_names(tabs));
+        text.push(',');
+        write_quoted(&mut text, &row.icon);
+        text.push(',');
+        write_quoted(&mut text, row.ninja_url.as_deref().unwrap_or_default());
+        text.push_str(EOL);
     }
     text
 }
 
-/// A text field: quoted, inner quotes doubled.
-fn quoted(text: &str) -> String {
-    format!("\"{}\"", text.replace('"', "\"\""))
+/// Writes a CSV-quoted text field, doubling inner quotes.
+fn write_quoted(out: &mut String, text: &str) {
+    out.push('"');
+    for (i, part) in text.split('"').enumerate() {
+        if i > 0 {
+            out.push_str("\"\"");
+        }
+        out.push_str(part);
+    }
+    out.push('"');
 }
 
-fn boolean(value: bool) -> String {
-    if value { "TRUE" } else { "FALSE" }.to_owned()
+fn boolean(value: bool) -> &'static str {
+    if value { "TRUE" } else { "FALSE" }
 }
 
 #[cfg(test)]

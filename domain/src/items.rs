@@ -113,15 +113,33 @@ pub struct Difference<'a> {
 /// items negated. Rows without a change in quantity or value are dropped.
 /// A Snapshot without item detail passes no rows.
 pub fn compare<'a>(older: &[MergedRow<'a>], newer: &[MergedRow<'a>]) -> Vec<Difference<'a>> {
-    let find = |rows: &[MergedRow<'a>], item: &MergedRow<'a>| {
-        rows.iter()
-            .position(|r| same_item(r.definition, item.definition))
+    // Every legacy rule compares the name first.
+    let by_name = |rows: &[MergedRow<'a>]| {
+        let mut by_name: HashMap<&'a str, Vec<usize>> = HashMap::new();
+        for (i, row) in rows.iter().enumerate() {
+            by_name
+                .entry(row.definition.name.as_str())
+                .or_default()
+                .push(i);
+        }
+        by_name
+    };
+    let (older_by_name, newer_by_name) = (by_name(older), by_name(newer));
+    let find = |rows: &[MergedRow<'a>],
+                by_name: &HashMap<&'a str, Vec<usize>>,
+                item: &MergedRow<'a>|
+     -> Option<usize> {
+        by_name
+            .get(item.definition.name.as_str())?
+            .iter()
+            .copied()
+            .find(|&i| same_item(rows[i].definition, item.definition))
     };
     let signed = |quantity: u64| i64::try_from(quantity).unwrap_or(i64::MAX);
     let mut changed = Vec::new();
     let mut added = Vec::new();
     for item in newer {
-        match find(older, item) {
+        match find(older, &older_by_name, item) {
             Some(i) if older[i].quantity != item.quantity => changed.push(Difference {
                 definition: item.definition,
                 price: item.price,
@@ -139,7 +157,7 @@ pub fn compare<'a>(older: &[MergedRow<'a>], newer: &[MergedRow<'a>]) -> Vec<Diff
     }
     let vanished = older
         .iter()
-        .filter(|item| find(newer, item).is_none())
+        .filter(|item| find(newer, &newer_by_name, item).is_none())
         .map(|item| Difference {
             definition: item.definition,
             price: item.price,
@@ -163,16 +181,25 @@ pub fn merge_comparisons<'a>(
     players: impl IntoIterator<Item = Vec<Difference<'a>>>,
 ) -> Vec<Difference<'a>> {
     let mut merged: Vec<Difference<'a>> = Vec::new();
+    // Every legacy rule compares the name first.
+    let mut by_name: HashMap<&'a str, Vec<usize>> = HashMap::new();
     for difference in players.into_iter().flatten() {
-        match merged
-            .iter_mut()
-            .find(|m| same_item(m.definition, difference.definition))
-        {
-            Some(item) => {
-                item.quantity += difference.quantity;
-                item.total += difference.total;
+        let named = by_name
+            .entry(difference.definition.name.as_str())
+            .or_default();
+        let found = named
+            .iter()
+            .copied()
+            .find(|&i| same_item(merged[i].definition, difference.definition));
+        match found {
+            Some(i) => {
+                merged[i].quantity += difference.quantity;
+                merged[i].total += difference.total;
             }
-            None => merged.push(difference),
+            None => {
+                named.push(merged.len());
+                merged.push(difference);
+            }
         }
     }
     merged.retain(|d| d.quantity != 0 && d.total != 0.0);

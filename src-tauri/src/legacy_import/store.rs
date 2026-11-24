@@ -85,21 +85,15 @@ pub async fn write(pool: &SqlitePool, write: &Write<'_>) -> sqlx::Result<Importe
             if inserted == 0 {
                 continue;
             }
-            for (position, tab) in snapshot.tabs.iter().enumerate() {
-                sqlx::query(
-                    "INSERT INTO snapshot_tabs \
-                     (account_id, snapshot_id, position, tab_id, name, value) \
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                )
-                .bind(account_id)
-                .bind(&snapshot.id)
-                .bind(position as i64)
-                .bind(&tab.tab_id)
-                .bind(write.selection.tab_name(&tab.tab_id))
-                .bind(tab.value)
-                .execute(&mut *tx)
-                .await?;
-            }
+            let tabs: Vec<(&str, &str, f64)> = snapshot
+                .tabs
+                .iter()
+                .map(|tab| {
+                    let name = write.selection.tab_name(&tab.tab_id);
+                    (tab.tab_id.as_str(), name, tab.value)
+                })
+                .collect();
+            snapshot::insert_tabs(&mut tx, account_id, &snapshot.id, &tabs).await?;
             added.push(snapshot.id.as_str());
         }
         snapshot::retain(&mut tx, account_id, &profile.id).await?;

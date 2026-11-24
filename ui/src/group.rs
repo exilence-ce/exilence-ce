@@ -73,7 +73,7 @@ pub fn GroupDrawer(state: State, open: RwSignal<bool>) -> impl IntoView {
             .status
             .with(|s| s.snapshot_running || s.operation_running)
     };
-    let name = move || state.group.with(|g| g.name.clone());
+    let name = Memo::new(move |_| state.group.with(|g| g.name.clone()));
     view! {
         <Show when=move || open.get()>
             <aside class="group-drawer">
@@ -86,7 +86,7 @@ pub fn GroupDrawer(state: State, open: RwSignal<bool>) -> impl IntoView {
                         <Icon path=icon::CHEVRON_RIGHT />
                     </button>
                 </div>
-                {move || match name() {
+                {move || match name.get() {
                     Some(name) => {
                         view! {
                             <div class="group-actions">

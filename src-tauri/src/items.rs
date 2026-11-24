@@ -272,7 +272,7 @@ pub async fn sweep(pool: &SqlitePool) -> Result<u64, Error> {
 
 /// `body` with the definitions it references.
 async fn with_definitions(pool: &SqlitePool, body: SnapshotBody) -> Result<Detail, Error> {
-    let ids: Vec<i64> = body
+    let ids: std::collections::HashSet<i64> = body
         .tabs
         .iter()
         .flat_map(|t| &t.definition_ids)
